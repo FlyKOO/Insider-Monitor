@@ -49,17 +49,17 @@ var TestWallets = []string{
 func GetTestConfig() *Config {
     return &Config{
         NetworkURL:    rpc.DevNet_RPC,
-        Wallets:      []string{"TestWallet1"},
+        Wallets:      TestWallets,
         ScanInterval: "5s",
         Alerts: AlertConfig{
-            MinimumBalance:    1,
+            MinimumBalance:    1000,
             SignificantChange: 0.05,
             IgnoreTokens:      []string{},
         },
         Discord: DiscordConfig{
-            Enabled:    true,
-            WebhookURL: "https://discord.com/api/webhooks/1307092244607533136/fXHt2nt9CSx6VS5sZzgFwMsOOVpWAgAojMn6dY0XVXcw-pgjB4ue0O14D1UgXD8pEJfO",
-            ChannelID:  "1307092119189585971",
+            Enabled:    false,
+            WebhookURL: "",
+            ChannelID:  "",
         },
     }
 }

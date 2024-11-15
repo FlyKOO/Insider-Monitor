@@ -77,61 +77,68 @@ func main() {
 func runMonitor(scanner WalletScanner, alerter alerts.Alerter, cfg *config.Config, scanInterval time.Duration) {
 	storage := storage.New("./data")
 	
-	// Load previous data for comparison
-	previousData, err := storage.LoadWalletData()
-	if err != nil {
-		log.Printf("warning: could not load previous data: %v", err)
-	}
-
-	// Perform initial scan
-	log.Println("Performing initial wallet scan...")
-	results, err := scanner.ScanAllWallets()
-	if err != nil {
-		log.Printf("warning: initial scan had errors: %v", err)
-	}
-	
-	if len(results) > 0 {
-		log.Printf("Initial scan complete. Found tokens in %d wallets", len(results))
-		if err := storage.SaveWalletData(results); err != nil {
-			log.Printf("error saving initial data: %v", err)
-		}
-		previousData = results
-	} else {
-		log.Printf("Initial scan failed to find any wallet data, will retry on next scan")
-	}
-
-	// Setup monitoring loop
-	ticker := time.NewTicker(scanInterval)
-	defer ticker.Stop()
-
+	// Create buffered channels for graceful shutdown
 	interrupt := make(chan os.Signal, 1)
+	done := make(chan bool, 1)
 	signal.Notify(interrupt, os.Interrupt, syscall.SIGTERM)
 
-	log.Printf("Monitoring %d wallets with %s interval (Ctrl+C to exit)...", len(cfg.Wallets), scanInterval)
+	// Start monitoring in a separate goroutine
+	go func() {
+		ticker := time.NewTicker(scanInterval)
+		defer ticker.Stop()
 
-	for {
-		select {
-		case <-ticker.C:
-			newResults, err := scanner.ScanAllWallets()
-			if err != nil {
-				log.Printf("error scanning wallets: %v", err)
-				continue
-			}
-
-			changes := monitor.DetectChanges(previousData, newResults)
-			processChanges(changes, alerter, cfg.Alerts)
-
-			if err := storage.SaveWalletData(newResults); err != nil {
-				log.Printf("error saving data: %v", err)
-			}
-			previousData = newResults
-
-		case <-interrupt:
-			log.Println("Shutting down gracefully...")
-			monitor.LogToFile("./data", "Monitor shutting down gracefully")
-			return
+		// Load previous data for comparison
+		previousData, err := storage.LoadWalletData()
+		if err != nil {
+			log.Printf("warning: could not load previous data: %v", err)
 		}
-	}
+
+		// Perform initial scan
+		log.Println("Performing initial wallet scan...")
+		results, err := scanner.ScanAllWallets()
+		if err != nil {
+			log.Printf("warning: initial scan had errors: %v", err)
+		}
+		
+		if len(results) > 0 {
+			log.Printf("Initial scan complete. Found tokens in %d wallets", len(results))
+			if err := storage.SaveWalletData(results); err != nil {
+				log.Printf("error saving initial data: %v", err)
+			}
+			previousData = results
+		}
+
+		log.Printf("Monitoring %d wallets with %s interval (Ctrl+C to exit)...", len(cfg.Wallets), scanInterval)
+
+		for {
+			select {
+			case <-ticker.C:
+				newResults, err := scanner.ScanAllWallets()
+				if err != nil {
+					log.Printf("error scanning wallets: %v", err)
+					continue
+				}
+
+				changes := monitor.DetectChanges(previousData, newResults)
+				processChanges(changes, alerter, cfg.Alerts)
+
+				if err := storage.SaveWalletData(newResults); err != nil {
+					log.Printf("error saving data: %v", err)
+				}
+				previousData = newResults
+
+			case <-done:
+				return
+			}
+		}
+	}()
+
+	// Wait for interrupt signal
+	<-interrupt
+	log.Println("Shutting down gracefully...")
+	monitor.LogToFile("./data", "Monitor shutting down gracefully")
+	done <- true
+	time.Sleep(time.Second) // Give a moment for final cleanup
 }
 
 func processChanges(changes []monitor.Change, alerter alerts.Alerter, alertCfg config.AlertConfig) {
@@ -141,11 +148,16 @@ func processChanges(changes []monitor.Change, alerter alerts.Alerter, alertCfg c
 			continue
 		}
 
-		// Skip if token is in ignore list
+		// Check if token should be ignored
+		shouldIgnore := false
 		for _, ignoredToken := range alertCfg.IgnoreTokens {
 			if change.TokenMint == ignoredToken {
-				continue
+				 shouldIgnore = true
+				 break
 			}
+		}
+		if shouldIgnore {
+			continue
 		}
 
 		var (

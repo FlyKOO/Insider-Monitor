@@ -18,27 +18,34 @@ func TestMockWalletMonitor(t *testing.T) {
 		t.Errorf("Expected 1 wallet, got %d", len(initial))
 	}
 	
-	// Wait for first change
-	time.Sleep(11 * time.Second)
-	
-	after10s, _ := mock.ScanAllWallets()
-	wallet := after10s["TestWallet1"]
+	// Check initial tokens
+	wallet := initial["TestWallet1"]
 	if wallet == nil {
 		t.Fatal("Test wallet not found")
 	}
  
-	if _, hasTokenB := wallet.TokenAccounts["TokenB"]; !hasTokenB {
-		t.Error("Expected TokenB to be added after 10 seconds")
+	// Check for SOL and USDC
+	if _, hasSol := wallet.TokenAccounts["So11111111111111111111111111111111111111112"]; !hasSol {
+		t.Error("Expected SOL token in initial wallet")
+	}
+	if _, hasUsdc := wallet.TokenAccounts["EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"]; !hasUsdc {
+		t.Error("Expected USDC token in initial wallet")
 	}
 	
-	// Wait for second change
+	// Wait for BONK token addition
+	time.Sleep(6 * time.Second)
+	afterNewToken, _ := mock.ScanAllWallets()
+	wallet = afterNewToken["TestWallet1"]
+	if _, hasBonk := wallet.TokenAccounts["DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263"]; !hasBonk {
+		t.Error("Expected BONK token to be added")
+	}
+	
+	// Wait for SOL balance change
 	time.Sleep(5 * time.Second)
-	
-	after15s, _ := mock.ScanAllWallets()
-	wallet = after15s["TestWallet1"]
-	
-	tokenA := wallet.TokenAccounts["TokenA"]
-	if tokenA.Balance != 200 {
-		t.Errorf("Expected TokenA balance to be 200, got %d", tokenA.Balance)
+	afterBalanceChange, _ := mock.ScanAllWallets()
+	wallet = afterBalanceChange["TestWallet1"]
+	solBalance := wallet.TokenAccounts["So11111111111111111111111111111111111111112"].Balance
+	if solBalance != 2000000000 {
+		t.Errorf("Expected SOL balance to be 2 SOL (2000000000), got %d", solBalance)
 	}
 } 

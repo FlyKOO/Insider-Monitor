@@ -31,6 +31,15 @@ type Alerter interface {
 type ConsoleAlerter struct{}
 
 func (a *ConsoleAlerter) SendAlert(alert Alert) error {
-    fmt.Printf("[%s] %s: %s\n", alert.Level, alert.Timestamp.Format(time.RFC3339), alert.Message)
+    var message string
+    switch alert.Level {
+    case Critical:
+        message = fmt.Sprintf("[CRITICAL] %s: %s", alert.Timestamp.Format(time.RFC3339), alert.Message)
+    case Warning:
+        message = fmt.Sprintf("[WARNING] %s: %s", alert.Timestamp.Format(time.RFC3339), alert.Message)
+    default:
+        message = fmt.Sprintf("[INFO] %s: %s", alert.Timestamp.Format(time.RFC3339), alert.Message)
+    }
+    fmt.Println(message)
     return nil
 } 

@@ -153,6 +153,24 @@ type Change struct {
     ChangeType    string
     OldBalance    uint64
     NewBalance    uint64
+    ChangePercent float64
+}
+
+func calculatePercentageChange(old, new uint64) float64 {
+    if old == 0 {
+        return 100.0
+    }
+    change := float64(new) - float64(old)
+    pctChange := (change / float64(old)) * 100.0
+    
+    // Cap the percentage at reasonable limits
+    if pctChange > 1000.0 {
+        pctChange = 1000.0
+    } else if pctChange < -1000.0 {
+        pctChange = -1000.0
+    }
+    
+    return pctChange
 }
 
 // Update ScanAllWallets to handle batches
@@ -226,12 +244,14 @@ func DetectChanges(old, new map[string]*WalletData) []Change {
             
             // Check for balance changes
             if oldInfo.Balance != newInfo.Balance {
+                pctChange := calculatePercentageChange(oldInfo.Balance, newInfo.Balance)
                 changes = append(changes, Change{
                     WalletAddress: walletAddr,
                     TokenMint:     mint,
                     ChangeType:    "balance_change",
                     OldBalance:    oldInfo.Balance,
                     NewBalance:    newInfo.Balance,
+                    ChangePercent: pctChange,
                 })
             }
         }
