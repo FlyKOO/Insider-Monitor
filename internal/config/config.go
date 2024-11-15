@@ -1,15 +1,33 @@
 package config
 
 import (
+	"encoding/json"
 	"errors"
+	"fmt"
+	"log"
+	"os"
 
 	"github.com/gagliardetto/solana-go/rpc"
 )
 
 type Config struct {
-    NetworkURL    string
-    Wallets      []string
-    ScanInterval string
+    NetworkURL    string        `json:"network_url"`
+    Wallets      []string      `json:"wallets"`
+    ScanInterval string        `json:"scan_interval"`
+    Alerts       AlertConfig   `json:"alerts"`
+    Discord      DiscordConfig `json:"discord"`
+}
+
+type AlertConfig struct {
+    MinimumBalance    uint64  `json:"minimum_balance"`    // Minimum balance to trigger alerts
+    SignificantChange float64 `json:"significant_change"` // e.g., 0.20 for 20% change
+    IgnoreTokens      []string `json:"ignore_tokens"`     // Tokens to ignore
+}
+
+type DiscordConfig struct {
+    Enabled    bool   `json:"enabled"`
+    WebhookURL string `json:"webhook_url"`
+    ChannelID  string `json:"channel_id"`
 }
 
 func (c *Config) Validate() error {
@@ -20,15 +38,6 @@ func (c *Config) Validate() error {
         return errors.New("at least one wallet address is required")
     }
     return nil
-}
-
-// Production wallets
-var Wallets = []string{
-    "Gf9XgdmvNHt8fUTFsWAccNbKeyDXsgJyZN8iFJKg5Pbd",
-    // "HUpPyLU8KWisCAr3mzWy2FKT6uuxQ2qGgJQxyTpDoes5",
-    // "FYGgfgZFeVxnJKF2RS6MKYHBsUpfJdCwumzkPpxWPM4u",
-    // "GmM5UFm8xu6TnZD7avwYcQ1zq25hD5yvHfYyAksHu9vB",
-    // "CWvdyvKHEu8Z6QqGraJT3sLPyp9bJfFhoXcxUYRKC8ou",
 }
 
 var TestWallets = []string{
@@ -42,5 +51,33 @@ func GetTestConfig() *Config {
         NetworkURL:    rpc.DevNet_RPC,
         Wallets:      []string{"TestWallet1"},
         ScanInterval: "5s",
+        Alerts: AlertConfig{
+            MinimumBalance:    1,
+            SignificantChange: 0.05,
+            IgnoreTokens:      []string{},
+        },
+        Discord: DiscordConfig{
+            Enabled:    true,
+            WebhookURL: "https://discord.com/api/webhooks/1307092244607533136/fXHt2nt9CSx6VS5sZzgFwMsOOVpWAgAojMn6dY0XVXcw-pgjB4ue0O14D1UgXD8pEJfO",
+            ChannelID:  "1307092119189585971",
+        },
     }
+}
+
+// LoadConfig loads configuration from a JSON file
+func LoadConfig(path string) (*Config, error) {
+    file, err := os.ReadFile(path)
+    if err != nil {
+        return nil, fmt.Errorf("failed to read config file: %w", err)
+    }
+
+    var cfg Config
+    if err := json.Unmarshal(file, &cfg); err != nil {
+        return nil, fmt.Errorf("failed to parse config: %w", err)
+    }
+
+    log.Printf("Loaded config: NetworkURL=%s, Wallets=%d, ScanInterval=%s", 
+        cfg.NetworkURL, len(cfg.Wallets), cfg.ScanInterval)
+
+    return &cfg, nil
 }

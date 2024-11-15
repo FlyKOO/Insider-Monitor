@@ -23,3 +23,10 @@ go.work.sum
 
 # Data Directory
 data/
+
+# Log Files
+*.log
+
+# Config File
+config.json
+*.json

@@ -9,10 +9,10 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/accursedgalaxy/insider-monitor/internal/alerts"
 	"github.com/accursedgalaxy/insider-monitor/internal/config"
 	"github.com/accursedgalaxy/insider-monitor/internal/monitor"
 	"github.com/accursedgalaxy/insider-monitor/internal/storage"
-	"github.com/gagliardetto/solana-go/rpc"
 )
 
 // WalletScanner interface defines the contract for wallet monitoring
@@ -22,36 +22,59 @@ type WalletScanner interface {
 
 func main() {
 	testMode := flag.Bool("test", false, "Run in test mode with accelerated scanning")
+	configPath := flag.String("config", "config.json", "Path to configuration file")
 	flag.Parse()
 
-	// Initialize monitor based on mode
-	var scanner WalletScanner
-	scanInterval := time.Minute
-
+	// Load configuration
+	var cfg *config.Config
+	var err error
+	
 	if *testMode {
-		scanInterval = time.Second * 5
+		cfg = config.GetTestConfig()
 		log.Println("Running in test mode with 5-second scan interval")
+	} else {
+		cfg, err = config.LoadConfig(*configPath)
+		if err != nil {
+			log.Fatalf("failed to load config: %v", err)
+		}
+	}
+
+	if err := cfg.Validate(); err != nil {
+		log.Fatalf("invalid configuration: %v", err)
+	}
+
+	// Initialize scanner
+	var scanner WalletScanner
+	if *testMode {
 		scanner = monitor.NewMockWalletMonitor()
 	} else {
-		cfg := &config.Config{
-			NetworkURL: rpc.MainNetBeta_RPC,
-			Wallets:   config.Wallets,
-		}
-		if err := cfg.Validate(); err != nil {
-			log.Fatalf("invalid configuration: %v", err)
-		}
-
-		var err error
 		scanner, err = monitor.NewWalletMonitor(cfg.NetworkURL, cfg.Wallets)
 		if err != nil {
 			log.Fatalf("failed to create wallet monitor: %v", err)
 		}
 	}
 
-	runMonitor(scanner, scanInterval)
+	// Initialize alerter
+	var alerter alerts.Alerter
+	if cfg.Discord.Enabled {
+		alerter = alerts.NewDiscordAlerter(cfg.Discord.WebhookURL, cfg.Discord.ChannelID)
+		log.Println("Discord alerts enabled")
+	} else {
+		alerter = &alerts.ConsoleAlerter{}
+		log.Println("Console alerts enabled")
+	}
+
+	// Parse scan interval
+	scanInterval, err := time.ParseDuration(cfg.ScanInterval)
+	if err != nil {
+		log.Printf("invalid scan interval '%s', using default of 1 minute", cfg.ScanInterval)
+		scanInterval = time.Minute
+	}
+
+	runMonitor(scanner, alerter, cfg, scanInterval)
 }
 
-func runMonitor(scanner WalletScanner, scanInterval time.Duration) {
+func runMonitor(scanner WalletScanner, alerter alerts.Alerter, cfg *config.Config, scanInterval time.Duration) {
 	storage := storage.New("./data")
 	
 	// Load previous data for comparison
@@ -80,7 +103,7 @@ func runMonitor(scanner WalletScanner, scanInterval time.Duration) {
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt, syscall.SIGTERM)
 
-	log.Println("Monitoring for changes (Ctrl+C to exit)...")
+	log.Printf("Monitoring %d wallets with %s interval (Ctrl+C to exit)...", len(cfg.Wallets), scanInterval)
 
 	for {
 		select {
@@ -92,7 +115,7 @@ func runMonitor(scanner WalletScanner, scanInterval time.Duration) {
 			}
 
 			changes := monitor.DetectChanges(previousData, newResults)
-			logChanges(changes)
+			processChanges(changes, alerter, cfg.Alerts)
 
 			if err := storage.SaveWalletData(newResults); err != nil {
 				log.Printf("error saving data: %v", err)
@@ -107,24 +130,70 @@ func runMonitor(scanner WalletScanner, scanInterval time.Duration) {
 	}
 }
 
-func logChanges(changes []monitor.Change) {
+func processChanges(changes []monitor.Change, alerter alerts.Alerter, alertCfg config.AlertConfig) {
 	for _, change := range changes {
-		var msg string
+		// Skip if balance is below minimum threshold
+		if change.NewBalance < alertCfg.MinimumBalance {
+			continue
+		}
+
+		// Skip if token is in ignore list
+		for _, ignoredToken := range alertCfg.IgnoreTokens {
+			if change.TokenMint == ignoredToken {
+				continue
+			}
+		}
+
+		var (
+			msg   string
+			level alerts.AlertLevel
+		)
+
 		switch change.ChangeType {
 		case "new_wallet":
 			msg = fmt.Sprintf("New wallet %s: Token %s with balance %d",
 				change.WalletAddress, change.TokenMint, change.NewBalance)
+			level = alerts.Info
 		case "new_token":
 			msg = fmt.Sprintf("New token detected in %s: %s with balance %d",
 				change.WalletAddress, change.TokenMint, change.NewBalance)
+			level = alerts.Warning
 		case "balance_change":
-			msg = fmt.Sprintf("Balance change in %s: Token %s from %d to %d",
-				change.WalletAddress, change.TokenMint, change.OldBalance, change.NewBalance)
+			// Calculate percentage change
+			percentChange := float64(change.NewBalance-change.OldBalance) / float64(change.OldBalance)
+			if abs(percentChange) < alertCfg.SignificantChange {
+				continue
+			}
+
+			msg = fmt.Sprintf("Balance change in %s: Token %s from %d to %d (%.2f%%)",
+				change.WalletAddress, change.TokenMint, change.OldBalance, change.NewBalance, percentChange*100)
+			level = alerts.Warning
+			if abs(percentChange) > 0.5 { // 50% change
+				level = alerts.Critical
+			}
 		}
-		
+
 		if msg != "" {
-			log.Print(msg)
+			alert := alerts.Alert{
+				Timestamp:     time.Now(),
+				WalletAddress: change.WalletAddress,
+				TokenMint:     change.TokenMint,
+				AlertType:     change.ChangeType,
+				Message:       msg,
+				Level:        level,
+			}
+
+			if err := alerter.SendAlert(alert); err != nil {
+				log.Printf("failed to send alert: %v", err)
+			}
 			monitor.LogToFile("./data", msg)
 		}
 	}
+}
+
+func abs(x float64) float64 {
+	if x < 0 {
+		return -x
+	}
+	return x
 }
