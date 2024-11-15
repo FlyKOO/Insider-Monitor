@@ -108,3 +108,57 @@ func (w *WalletMonitor) ScanAllWallets() (map[string]*WalletData, error) {
 
 	return results, nil
 }
+
+// Change represents a detected change in a wallet
+type Change struct {
+	WalletAddress string
+	TokenMint     string
+	ChangeType    string // "new_wallet", "new_token", "balance_change"
+	OldBalance    uint64
+	NewBalance    uint64
+}
+
+// DetectChanges compares old and new wallet data to find changes
+func DetectChanges(old, new map[string]*WalletData) []Change {
+	var changes []Change
+	
+	for wallet, newData := range new {
+		oldData, existed := old[wallet]
+		
+		// Check for new wallet
+		if !existed {
+			for mint, token := range newData.TokenAccounts {
+				changes = append(changes, Change{
+					WalletAddress: wallet,
+					TokenMint:     mint,
+					ChangeType:    "new_wallet",
+					NewBalance:    token.Balance,
+				})
+			}
+			continue
+		}
+		
+		// Check for token changes
+		for mint, newToken := range newData.TokenAccounts {
+			oldToken, hadToken := oldData.TokenAccounts[mint]
+			if !hadToken {
+				changes = append(changes, Change{
+					WalletAddress: wallet,
+					TokenMint:     mint,
+					ChangeType:    "new_token",
+					NewBalance:    newToken.Balance,
+				})
+			} else if oldToken.Balance != newToken.Balance {
+				changes = append(changes, Change{
+					WalletAddress: wallet,
+					TokenMint:     mint,
+					ChangeType:    "balance_change",
+					OldBalance:    oldToken.Balance,
+					NewBalance:    newToken.Balance,
+				})
+			}
+		}
+	}
+	
+	return changes
+}
