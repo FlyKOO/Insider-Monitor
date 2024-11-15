@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/accursedgalaxy/insider-monitor/internal/monitor"
 )
@@ -49,4 +50,26 @@ func (s *Storage) LoadWalletData() (map[string]*monitor.WalletData, error) {
     
     err = json.Unmarshal(file, &data)
     return data, err
+}
+
+func (s *Storage) IsDataValid() bool {
+    data, err := s.LoadWalletData()
+    if err != nil {
+        return false
+    }
+    return len(data) > 0
+}
+
+func (s *Storage) BackupCurrentData() error {
+    currentData, err := s.LoadWalletData()
+    if err != nil {
+        return err
+    }
+
+    backupPath := filepath.Join(s.dataDir, fmt.Sprintf("wallet_data_backup_%d.json", time.Now().Unix()))
+    file, err := json.MarshalIndent(currentData, "", "  ")
+    if err != nil {
+        return err
+    }
+    return os.WriteFile(backupPath, file, 0644)
 }

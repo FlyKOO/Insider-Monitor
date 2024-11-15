@@ -82,6 +82,26 @@ func runMonitor(scanner WalletScanner, alerter alerts.Alerter, cfg *config.Confi
 	done := make(chan bool, 1)
 	signal.Notify(interrupt, os.Interrupt, syscall.SIGTERM)
 
+	// Track connection state
+	var lastSuccessfulScan time.Time
+	var connectionLost bool
+	
+	// Define maximum allowed time between successful scans
+	maxTimeBetweenScans := scanInterval * 3
+
+	// Perform initial scan immediately
+	log.Println("Performing initial wallet scan...")
+	initialResults, err := scanner.ScanAllWallets()
+	if err != nil {
+		log.Printf("Warning: initial scan had errors: %v", err)
+	} else {
+		if err := storage.SaveWalletData(initialResults); err != nil {
+			log.Printf("Error saving initial data: %v", err)
+		}
+		lastSuccessfulScan = time.Now()
+		log.Printf("Initial scan complete. Found data for %d wallets", len(initialResults))
+	}
+	
 	// Start monitoring in a separate goroutine
 	go func() {
 		ticker := time.NewTicker(scanInterval)
@@ -90,44 +110,60 @@ func runMonitor(scanner WalletScanner, alerter alerts.Alerter, cfg *config.Confi
 		// Load previous data for comparison
 		previousData, err := storage.LoadWalletData()
 		if err != nil {
-			log.Printf("warning: could not load previous data: %v", err)
+			log.Printf("Warning: could not load previous data: %v", err)
+			previousData = make(map[string]*monitor.WalletData)
 		}
 
-		// Perform initial scan
-		log.Println("Performing initial wallet scan...")
-		results, err := scanner.ScanAllWallets()
-		if err != nil {
-			log.Printf("warning: initial scan had errors: %v", err)
-		}
-		
-		if len(results) > 0 {
-			log.Printf("Initial scan complete. Found tokens in %d wallets", len(results))
-			if err := storage.SaveWalletData(results); err != nil {
-				log.Printf("error saving initial data: %v", err)
-			}
-			previousData = results
-		}
-
-		log.Printf("Monitoring %d wallets with %s interval (Ctrl+C to exit)...", len(cfg.Wallets), scanInterval)
+		log.Printf("Starting monitoring loop with %v interval...", scanInterval)
 
 		for {
 			select {
 			case <-ticker.C:
-				newResults, err := scanner.ScanAllWallets()
-				if err != nil {
-					log.Printf("error scanning wallets: %v", err)
+				// Check if we've exceeded the maximum time between scans
+				if time.Since(lastSuccessfulScan) > maxTimeBetweenScans && !connectionLost {
+					connectionLost = true
+					log.Printf("No successful scan in %v, marking connection as lost", maxTimeBetweenScans)
 					continue
 				}
 
-				changes := monitor.DetectChanges(previousData, newResults)
-				processChanges(changes, alerter, cfg.Alerts)
+				newResults, err := scanner.ScanAllWallets()
+				if err != nil {
+					log.Printf("Error scanning wallets: %v", err)
+					if !connectionLost {
+						connectionLost = true
+						log.Println("Connection appears to be lost, will suppress alerts until restored")
+					}
+					continue
+				}
 
+				// Connection restored check
+				if connectionLost {
+					connectionLost = false
+					log.Println("Connection restored, loading previous data to prevent false alerts")
+					if savedData, err := storage.LoadWalletData(); err == nil {
+						previousData = savedData
+					}
+					lastSuccessfulScan = time.Now()
+					continue
+				}
+
+				// Update last successful scan time
+				lastSuccessfulScan = time.Now()
+
+				// Process changes only if we have previous data and connection is stable
+				if len(previousData) > 0 {
+					changes := monitor.DetectChanges(previousData, newResults)
+					processChanges(changes, alerter, cfg.Alerts)
+				}
+
+				// Save new results
 				if err := storage.SaveWalletData(newResults); err != nil {
-					log.Printf("error saving data: %v", err)
+					log.Printf("Error saving data: %v", err)
 				}
 				previousData = newResults
 
 			case <-done:
+				log.Println("Monitoring loop stopped")
 				return
 			}
 		}

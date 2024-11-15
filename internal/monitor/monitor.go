@@ -19,6 +19,7 @@ type WalletMonitor struct {
 	client      *rpc.Client
 	wallets     []solana.PublicKey
 	networkURL  string
+	isConnected bool
 }
 
 func NewWalletMonitor(networkURL string, wallets []string) (*WalletMonitor, error) {
@@ -173,10 +174,23 @@ func calculatePercentageChange(old, new uint64) float64 {
     return pctChange
 }
 
+// Add connection check method
+func (w *WalletMonitor) checkConnection() error {
+    // Try to get slot number as a simple connection test
+    _, err := w.client.GetSlot(context.Background(), rpc.CommitmentFinalized)
+    w.isConnected = err == nil
+    return err
+}
+
 // Update ScanAllWallets to handle batches
 func (w *WalletMonitor) ScanAllWallets() (map[string]*WalletData, error) {
+    // Check connection first
+    if err := w.checkConnection(); err != nil {
+        return nil, fmt.Errorf("connection check failed: %w", err)
+    }
+
     results := make(map[string]*WalletData)
-    batchSize := 2 // Reduced batch size
+    batchSize := 2
     
     for i := 0; i < len(w.wallets); i += batchSize {
         end := i + batchSize
