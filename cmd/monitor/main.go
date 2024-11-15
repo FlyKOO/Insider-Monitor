@@ -15,61 +15,68 @@ import (
 	"github.com/gagliardetto/solana-go/rpc"
 )
 
+// WalletScanner interface defines the contract for wallet monitoring
+type WalletScanner interface {
+	ScanAllWallets() (map[string]*monitor.WalletData, error)
+}
+
 func main() {
 	testMode := flag.Bool("test", false, "Run in test mode with accelerated scanning")
 	flag.Parse()
 
+	// Initialize monitor based on mode
+	var scanner WalletScanner
 	scanInterval := time.Minute
-	var walletMonitor interface {
-		ScanAllWallets() (map[string]*monitor.WalletData, error)
-	}
 
 	if *testMode {
 		scanInterval = time.Second * 5
 		log.Println("Running in test mode with 5-second scan interval")
-		walletMonitor = monitor.NewMockWalletMonitor()
+		scanner = monitor.NewMockWalletMonitor()
 	} else {
 		cfg := &config.Config{
 			NetworkURL: rpc.MainNetBeta_RPC,
-			Wallets:    config.Wallets,
+			Wallets:   config.Wallets,
 		}
 		if err := cfg.Validate(); err != nil {
-			log.Fatalf("Invalid configuration: %v", err)
+			log.Fatalf("invalid configuration: %v", err)
 		}
+
 		var err error
-		walletMonitor, err = monitor.NewWalletMonitor(cfg.NetworkURL, cfg.Wallets)
+		scanner, err = monitor.NewWalletMonitor(cfg.NetworkURL, cfg.Wallets)
 		if err != nil {
-			log.Fatalf("Failed to create wallet monitor: %v", err)
+			log.Fatalf("failed to create wallet monitor: %v", err)
 		}
 	}
 
-	ticker := time.NewTicker(scanInterval)
-	defer ticker.Stop()
+	runMonitor(scanner, scanInterval)
+}
 
-	log.Println("Starting Solana Wallet Monitor...")
-
+func runMonitor(scanner WalletScanner, scanInterval time.Duration) {
 	storage := storage.New("./data")
-
+	
 	// Load previous data for comparison
 	previousData, err := storage.LoadWalletData()
 	if err != nil {
-		log.Printf("Warning: Could not load previous data: %v", err)
+		log.Printf("warning: could not load previous data: %v", err)
 	}
 
-	// Initial scan
+	// Perform initial scan
 	log.Println("Performing initial wallet scan...")
-	results, err := walletMonitor.ScanAllWallets()
+	results, err := scanner.ScanAllWallets()
 	if err != nil {
-		log.Printf("Initial scan error: %v", err)
+		log.Printf("initial scan error: %v", err)
 	} else {
 		log.Printf("Initial scan complete. Found tokens in %d wallets", len(results))
 		if err := storage.SaveWalletData(results); err != nil {
-			log.Printf("Error saving initial data: %v", err)
+			log.Printf("error saving initial data: %v", err)
 		}
 		previousData = results
 	}
 
-	// Setup interrupt handling
+	// Setup monitoring loop
+	ticker := time.NewTicker(scanInterval)
+	defer ticker.Stop()
+
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt, syscall.SIGTERM)
 
@@ -78,39 +85,17 @@ func main() {
 	for {
 		select {
 		case <-ticker.C:
-			newResults, err := walletMonitor.ScanAllWallets()
+			newResults, err := scanner.ScanAllWallets()
 			if err != nil {
-				log.Printf("Error scanning wallets: %v", err)
+				log.Printf("error scanning wallets: %v", err)
 				continue
 			}
 
-			// Use DetectChanges to find changes
 			changes := monitor.DetectChanges(previousData, newResults)
-			
-			// Log any changes
-			for _, change := range changes {
-				var msg string
-				switch change.ChangeType {
-				case "new_wallet":
-					msg = fmt.Sprintf("New wallet %s: Token %s with balance %d",
-						change.WalletAddress, change.TokenMint, change.NewBalance)
-				case "new_token":
-					msg = fmt.Sprintf("New token detected in %s: %s with balance %d",
-						change.WalletAddress, change.TokenMint, change.NewBalance)
-				case "balance_change":
-					msg = fmt.Sprintf("Balance change in %s: Token %s from %d to %d",
-						change.WalletAddress, change.TokenMint, change.OldBalance, change.NewBalance)
-				}
-				
-				if msg != "" {
-					log.Print(msg)
-					monitor.LogToFile("./data", msg)
-				}
-			}
+			logChanges(changes)
 
-			// Save new state and update previous data
 			if err := storage.SaveWalletData(newResults); err != nil {
-				log.Printf("Error saving data: %v", err)
+				log.Printf("error saving data: %v", err)
 			}
 			previousData = newResults
 
@@ -118,6 +103,28 @@ func main() {
 			log.Println("Shutting down gracefully...")
 			monitor.LogToFile("./data", "Monitor shutting down gracefully")
 			return
+		}
+	}
+}
+
+func logChanges(changes []monitor.Change) {
+	for _, change := range changes {
+		var msg string
+		switch change.ChangeType {
+		case "new_wallet":
+			msg = fmt.Sprintf("New wallet %s: Token %s with balance %d",
+				change.WalletAddress, change.TokenMint, change.NewBalance)
+		case "new_token":
+			msg = fmt.Sprintf("New token detected in %s: %s with balance %d",
+				change.WalletAddress, change.TokenMint, change.NewBalance)
+		case "balance_change":
+			msg = fmt.Sprintf("Balance change in %s: Token %s from %d to %d",
+				change.WalletAddress, change.TokenMint, change.OldBalance, change.NewBalance)
+		}
+		
+		if msg != "" {
+			log.Print(msg)
+			monitor.LogToFile("./data", msg)
 		}
 	}
 }

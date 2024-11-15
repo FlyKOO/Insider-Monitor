@@ -15,10 +15,8 @@ type Storage struct {
 }
 
 func New(dataDir string) *Storage {
-    // Create data directory if it doesn't exist
     if err := os.MkdirAll(dataDir, 0755); err != nil {
-        // Log error but continue - we'll handle storage errors at operation time
-        log.Printf("Warning: Failed to create data directory: %v", err)
+        log.Printf("warning: failed to create data directory: %v", err)
     }
     return &Storage{dataDir: dataDir}
 }

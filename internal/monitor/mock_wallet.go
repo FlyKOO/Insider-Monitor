@@ -10,25 +10,16 @@ type MockWalletMonitor struct {
 }
 
 func NewMockWalletMonitor() *MockWalletMonitor {
-	startTime := time.Now()
-	
-	// Initial test data
-	initialData := map[string]*WalletData{
-		"TestWallet1": {
-			WalletAddress: "TestWallet1",
-			TokenAccounts: map[string]TokenAccountInfo{
-				"TokenA": {
-					Balance:     100,
-					LastUpdated: startTime,
+	return &MockWalletMonitor{
+		startTime: time.Now(),
+		data: map[string]*WalletData{
+			"TestWallet1": {
+				WalletAddress: "TestWallet1",
+				TokenAccounts: map[string]TokenAccountInfo{
+					"TokenA": {Balance: 100, LastUpdated: time.Now()},
 				},
 			},
-			LastScanned: startTime,
 		},
-	}
-	
-	return &MockWalletMonitor{
-		startTime: startTime,
-		data:      initialData,
 	}
 }
 

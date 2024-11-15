@@ -6,28 +6,23 @@ import (
 	"github.com/gagliardetto/solana-go/rpc"
 )
 
-// Config for the WalletMonitor.
 type Config struct {
-    // NetworkURL is the URL of the Solana network to connect to.
-    NetworkURL string
-    // Wallets is a list of wallet addresses to monitor.
-    Wallets []string
-    // ScanInterval is the interval between scans.
+    NetworkURL    string
+    Wallets      []string
     ScanInterval string
 }
 
-// Validate the Config.
 func (c *Config) Validate() error {
     if c.NetworkURL == "" {
-        return errors.New("NetworkURL is required")
+        return errors.New("network URL is required")
     }
     if len(c.Wallets) == 0 {
-        return errors.New("At least one wallet address is required")
+        return errors.New("at least one wallet address is required")
     }
     return nil
 }
 
-// List of wallet addresses to monitor.
+// Production wallets
 var Wallets = []string{
     "Gf9XgdmvNHt8fUTFsWAccNbKeyDXsgJyZN8iFJKg5Pbd",
     // "HUpPyLU8KWisCAr3mzWy2FKT6uuxQ2qGgJQxyTpDoes5",
@@ -41,10 +36,11 @@ var TestWallets = []string{
     "DWuopnuSqYdBhCXqxfqjqzPGibnhkj6SQqFvgC4jkvjF", // Another test wallet
 }
 
+// Test configuration
 func GetTestConfig() *Config {
     return &Config{
-        NetworkURL: rpc.DevNet_RPC,
-        Wallets:    TestWallets,
+        NetworkURL:    rpc.DevNet_RPC,
+        Wallets:      []string{"TestWallet1"},
         ScanInterval: "5s",
     }
 }
