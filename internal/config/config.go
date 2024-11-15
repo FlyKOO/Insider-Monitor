@@ -26,8 +26,8 @@ func (c *Config) Validate() error {
 // List of wallet addresses to monitor.
 var Wallets = []string{
     "Gf9XgdmvNHt8fUTFsWAccNbKeyDXsgJyZN8iFJKg5Pbd",
-    "HUpPyLU8KWisCAr3mzWy2FKT6uuxQ2qGgJQxyTpDoes5",
-    "FYGgfgZFeVxnJKF2RS6MKYHBsUpfJdCwumzkPpxWPM4u",
-    "GmM5UFm8xu6TnZD7avwYcQ1zq25hD5yvHfYyAksHu9vB",
-    "CWvdyvKHEu8Z6QqGraJT3sLPyp9bJfFhoXcxUYRKC8ou",
+    // "HUpPyLU8KWisCAr3mzWy2FKT6uuxQ2qGgJQxyTpDoes5",
+    // "FYGgfgZFeVxnJKF2RS6MKYHBsUpfJdCwumzkPpxWPM4u",
+    // "GmM5UFm8xu6TnZD7avwYcQ1zq25hD5yvHfYyAksHu9vB",
+    // "CWvdyvKHEu8Z6QqGraJT3sLPyp9bJfFhoXcxUYRKC8ou",
 }
