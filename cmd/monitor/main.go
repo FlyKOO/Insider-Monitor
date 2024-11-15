@@ -87,13 +87,17 @@ func runMonitor(scanner WalletScanner, alerter alerts.Alerter, cfg *config.Confi
 	log.Println("Performing initial wallet scan...")
 	results, err := scanner.ScanAllWallets()
 	if err != nil {
-		log.Printf("initial scan error: %v", err)
-	} else {
+		log.Printf("warning: initial scan had errors: %v", err)
+	}
+	
+	if len(results) > 0 {
 		log.Printf("Initial scan complete. Found tokens in %d wallets", len(results))
 		if err := storage.SaveWalletData(results); err != nil {
 			log.Printf("error saving initial data: %v", err)
 		}
 		previousData = results
+	} else {
+		log.Printf("Initial scan failed to find any wallet data, will retry on next scan")
 	}
 
 	// Setup monitoring loop
