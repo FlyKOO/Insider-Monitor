@@ -153,7 +153,7 @@ func runMonitor(scanner WalletScanner, alerter alerts.Alerter, cfg *config.Confi
 
 				// Process changes only if we have previous data and connection is stable
 				if len(previousData) > 0 {
-					changes := monitor.DetectChanges(previousData, newResults)
+					changes := monitor.DetectChanges(previousData, newResults, cfg.Alerts.SignificantChange)
 					processChanges(changes, alerter, cfg.Alerts)
 				}
 
@@ -202,17 +202,18 @@ func processChanges(changes []monitor.Change, alerter alerts.Alerter, alertCfg c
 			level = alerts.Warning
 
 		case "balance_change":
-			// Calculate percentage change
-			percentChange := float64(change.NewBalance-change.OldBalance) / float64(change.OldBalance)
-			if abs(percentChange) < alertCfg.SignificantChange {
-				continue
-			}
-
 			msg = fmt.Sprintf("Balance change in %s: Token %s from %d to %d (%.2f%%)",
-				change.WalletAddress, change.TokenMint, change.OldBalance, change.NewBalance, percentChange*100)
-			level = alerts.Warning
-			if abs(percentChange) > 0.5 { // 50% change
+				change.WalletAddress, change.TokenMint, 
+				change.OldBalance, change.NewBalance, change.ChangePercent)
+			
+			// Use config values for thresholds
+			switch {
+			case abs(change.ChangePercent) >= (alertCfg.SignificantChange * 4): // 4x significant change for critical
 				level = alerts.Critical
+			case abs(change.ChangePercent) >= alertCfg.SignificantChange:
+				level = alerts.Warning
+			default:
+				level = alerts.Info
 			}
 		}
 

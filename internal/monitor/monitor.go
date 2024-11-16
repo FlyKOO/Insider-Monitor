@@ -149,33 +149,41 @@ func (w *WalletMonitor) GetWalletData(wallet solana.PublicKey) (*WalletData, err
 
 // Add these type definitions
 type Change struct {
-    WalletAddress string
-    TokenMint     string
-    ChangeType    string
-    OldBalance    uint64
-    NewBalance    uint64
-    ChangePercent float64
-    TokenBalances map[string]uint64 `json:",omitempty"`
+    WalletAddress  string
+    TokenMint      string
+    ChangeType     string
+    OldBalance     uint64
+    NewBalance     uint64
+    ChangePercent  float64
+    TokenBalances  map[string]uint64 `json:",omitempty"`
 }
 
 func calculatePercentageChange(old, new uint64) float64 {
     if old == 0 {
-        return 100.0
-    }
-    change := float64(new) - float64(old)
-    pctChange := (change / float64(old)) * 100.0
-    
-    // Cap the percentage at reasonable limits
-    if pctChange > 1000.0 {
-        pctChange = 1000.0
-    } else if pctChange < -1000.0 {
-        pctChange = -1000.0
+        return 100.0 // Return 100% for new additions
     }
     
-    return pctChange
+    // Convert to float64 before division to maintain precision
+    oldFloat := float64(old)
+    newFloat := float64(new)
+    
+    // Calculate percentage change
+    change := ((newFloat - oldFloat) / oldFloat) * 100.0
+    
+    // Round to 2 decimal places to avoid floating point precision issues
+    change = float64(int64(change*100)) / 100
+    
+    return change
 }
 
-// Add connection check method
+// Utility function for absolute values
+func abs(x float64) float64 {
+    if x < 0 {
+        return -x
+    }
+    return x
+}
+
 func (w *WalletMonitor) checkConnection() error {
     // Try to get slot number as a simple connection test
     _, err := w.client.GetSlot(context.Background(), rpc.CommitmentFinalized)
@@ -222,7 +230,7 @@ func (w *WalletMonitor) ScanAllWallets() (map[string]*WalletData, error) {
     return results, nil
 }
 
-func DetectChanges(old, new map[string]*WalletData) []Change {
+func DetectChanges(old, new map[string]*WalletData, significantChange float64) []Change {
     var changes []Change
     
     // Track new wallets and their token balances
@@ -256,16 +264,16 @@ func DetectChanges(old, new map[string]*WalletData) []Change {
                 continue
             }
             
-            // Check for balance changes
-            if oldInfo.Balance != newInfo.Balance {
-                pctChange := calculatePercentageChange(oldInfo.Balance, newInfo.Balance)
+            // Check for significant balance changes only
+            pctChange := calculatePercentageChange(oldInfo.Balance, newInfo.Balance)
+            if abs(pctChange) >= significantChange {
                 changes = append(changes, Change{
-                    WalletAddress: walletAddr,
-                    TokenMint:     mint,
-                    ChangeType:    "balance_change",
-                    OldBalance:    oldInfo.Balance,
-                    NewBalance:    newInfo.Balance,
-                    ChangePercent: pctChange,
+                    WalletAddress:  walletAddr,
+                    TokenMint:      mint,
+                    ChangeType:     "balance_change",
+                    OldBalance:     oldInfo.Balance,
+                    NewBalance:     newInfo.Balance,
+                    ChangePercent:  pctChange,
                 })
             }
         }

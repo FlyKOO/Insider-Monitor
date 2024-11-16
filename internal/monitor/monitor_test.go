@@ -6,10 +6,12 @@ import (
 )
 
 func TestDetectChanges(t *testing.T) {
+	const testSignificantChange = 5.0 // 5% threshold for testing
+
 	tests := []struct {
-		name          string
-		oldData       map[string]*WalletData
-		newData       map[string]*WalletData
+		name            string
+		oldData         map[string]*WalletData
+		newData         map[string]*WalletData
 		expectedChanges []Change
 	}{
 		{
@@ -53,7 +55,13 @@ func TestDetectChanges(t *testing.T) {
 					WalletAddress: "Wallet1",
 					TokenAccounts: map[string]TokenAccountInfo{
 						"TokenA": {Balance: 150},
-						"TokenB": {Balance: 100},
+					},
+				},
+				"Wallet2": {
+					WalletAddress: "Wallet2",
+					TokenAccounts: map[string]TokenAccountInfo{
+						"TokenB": {Balance: 200},
+						"TokenC": {Balance: 300},
 					},
 				},
 			},
@@ -64,15 +72,15 @@ func TestDetectChanges(t *testing.T) {
 					ChangeType:     "balance_change",
 					OldBalance:     100,
 					NewBalance:     150,
-					ChangePercent:  0.5,
+					ChangePercent:  50.0,
 				},
 				{
-					WalletAddress:  "Wallet1",
-					TokenMint:      "TokenB",
-					ChangeType:     "balance_change",
-					OldBalance:     200,
-					NewBalance:     100,
-					ChangePercent:  -0.5,
+					WalletAddress: "Wallet2",
+					ChangeType:    "new_wallet",
+					TokenBalances: map[string]uint64{
+						"TokenB": 200,
+						"TokenC": 300,
+					},
 				},
 			},
 		},
@@ -143,7 +151,7 @@ func TestDetectChanges(t *testing.T) {
 					ChangeType:     "balance_change",
 					OldBalance:     100,
 					NewBalance:     150,
-					ChangePercent:  0.5,
+					ChangePercent:  50.0,
 				},
 				{
 					WalletAddress: "Wallet2",
@@ -159,7 +167,7 @@ func TestDetectChanges(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			changes := DetectChanges(tt.oldData, tt.newData)
+			changes := DetectChanges(tt.oldData, tt.newData, testSignificantChange)
 			
 			if len(changes) != len(tt.expectedChanges) {
 				t.Errorf("Expected %d changes, got %d", len(tt.expectedChanges), len(changes))
