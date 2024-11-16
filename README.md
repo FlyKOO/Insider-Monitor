@@ -2,7 +2,6 @@
 
 ---
 
-## Current State of the System
 <div style="background-color: #1E1E2F; color: white; border-radius: 10px; padding: 20px; margin-bottom: 20px;">
     <h2 style="text-align: center;">🚀 Current State of the System</h2>
     <p style="text-align: center;">This project is in the <strong>very early stages</strong> of development. It currently monitors a selected list of Solana wallets, tracking new token holdings and balance changes. Alerts are sent to a dedicated channel on Discord, and <strong>all alerts should be treated with caution</strong>. Remember to do your own research (DYOR) when making any financial decisions based on this data.</p>
