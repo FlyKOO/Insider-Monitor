@@ -42,11 +42,7 @@ The initial goal is to monitor specific Solana wallet addresses for new and sign
    - Implement a system to track clusters of wallets that engage in coordinated buying or selling.
    - Use data science techniques to detect patterns and potential insider networks.
 
-### 3. **Social and Community Signal Integration**
-   - Cross-reference wallet activity with social media signals to validate insights.
-   - Develop tools to correlate on-chain activity with market sentiment and key influencer behavior.
-
-### 4. **Anomaly and Pattern Detection**
+### 3. **Anomaly and Pattern Detection**
    - Build models to detect anomalies, such as dormant wallets suddenly becoming active or unusual token transfers.
    - Implement automated checks for coordinated activity across multiple wallets.
 
@@ -77,38 +73,23 @@ The initial goal is to monitor specific Solana wallet addresses for new and sign
 ### Phase 1: Initial Setup
 - Configure the project environment and install dependencies.
 - Test basic blockchain interactions using the Solana Go SDK.
+    -> Completed!
 
 ### Phase 2: Wallet Monitoring Implementation
 - Develop wallet monitoring functionality to track token holdings and balances.
+    -> Completed!
 
 ### Phase 3: Data Persistence
 - Create a simple data storage solution and implement efficient loading and saving mechanisms.
+    -> Completed!
 
 ### Phase 4: Basic Alerting System
 - Implement a logging-based alert system and prepare for more advanced notifications.
+    -> Completed!
 
 ### Phase 5: Testing and Optimization
 - Ensure the tool is functional, efficient, and ready for real-world use.
-
----
-
-## Future Development Roadmap
-
-### 1. **Advanced Alerts and Integrations**
-   - Integrate with email, SMS, or push notification services.
-   - Implement real-time WebSocket monitoring for faster alerts.
-
-### 2. **Comprehensive Wallet Analysis**
-   - Develop in-depth historical analysis tools to identify profitable patterns.
-   - Incorporate advanced visualization features for easier data interpretation.
-
-### 3. **Machine Learning and Predictive Analysis**
-   - Experiment with machine learning models to predict potential token movements based on historical wallet behavior.
-   - Use predictive analytics to improve the accuracy and reliability of alerts.
-
-### 4. **Web and Mobile Interface**
-   - Build a web-based dashboard for real-time monitoring and analysis.
-   - Develop mobile-friendly features for on-the-go insights.
+    -> In Progress!
 
 ---
 
