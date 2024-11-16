@@ -90,6 +90,16 @@ func runMonitor(scanner WalletScanner, alerter alerts.Alerter, cfg *config.Confi
 	// Define maximum allowed time between successful scans
 	maxTimeBetweenScans := scanInterval * 3
 
+	// Initialize previousData from storage at startup
+	var previousData map[string]*monitor.WalletData
+	if savedData, err := storage.LoadWalletData(); err == nil {
+		previousData = savedData
+		log.Println("Loaded previous wallet data from storage")
+	} else {
+		log.Printf("Warning: Could not load previous data: %v. Will initialize after first scan.", err)
+		previousData = make(map[string]*monitor.WalletData)
+	}
+
 	// Perform initial scan immediately
 	log.Println("Performing initial wallet scan...")
 	initialResults, err := scanner.ScanAllWallets()
@@ -107,13 +117,6 @@ func runMonitor(scanner WalletScanner, alerter alerts.Alerter, cfg *config.Confi
 	go func() {
 		ticker := time.NewTicker(scanInterval)
 		defer ticker.Stop()
-
-		// Load previous data for comparison
-		previousData, err := storage.LoadWalletData()
-		if err != nil {
-			log.Printf("Warning: could not load previous data: %v", err)
-			previousData = make(map[string]*monitor.WalletData)
-		}
 
 		log.Printf("Starting monitoring loop with %v interval...", scanInterval)
 
@@ -151,10 +154,13 @@ func runMonitor(scanner WalletScanner, alerter alerts.Alerter, cfg *config.Confi
 				// Update last successful scan time
 				lastSuccessfulScan = time.Now()
 
-				// Process changes only if we have previous data and connection is stable
+				// Process changes only if we have previous data
 				if len(previousData) > 0 {
 					changes := monitor.DetectChanges(previousData, newResults, cfg.Alerts.SignificantChange)
 					processChanges(changes, alerter, cfg.Alerts)
+				} else {
+					// First scan, just store the data without generating alerts
+					log.Println("Initial scan completed, storing baseline data")
 				}
 
 				// Save new results

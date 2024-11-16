@@ -38,8 +38,22 @@ func (s *Storage) SaveWalletData(data map[string]*monitor.WalletData) error {
 
 func (s *Storage) LoadWalletData() (map[string]*monitor.WalletData, error) {
     path := filepath.Join(s.dataDir, "wallet_data.json")
-    data := make(map[string]*monitor.WalletData)
     
+    // Create storage directory if it doesn't exist
+    if err := os.MkdirAll(s.dataDir, 0755); err != nil {
+        return nil, fmt.Errorf("failed to create data directory: %w", err)
+    }
+
+    // If file doesn't exist, create empty data
+    if _, err := os.Stat(path); os.IsNotExist(err) {
+        emptyData := make(map[string]*monitor.WalletData)
+        if err := s.SaveWalletData(emptyData); err != nil {
+            return nil, fmt.Errorf("failed to create initial data file: %w", err)
+        }
+        return emptyData, nil
+    }
+
+    data := make(map[string]*monitor.WalletData)
     file, err := os.ReadFile(path)
     if err != nil {
         if os.IsNotExist(err) {
@@ -49,7 +63,11 @@ func (s *Storage) LoadWalletData() (map[string]*monitor.WalletData, error) {
     }
     
     err = json.Unmarshal(file, &data)
-    return data, err
+    if err != nil {
+        return nil, fmt.Errorf("failed to unmarshal data: %w", err)
+    }
+    
+    return data, nil
 }
 
 func (s *Storage) IsDataValid() bool {
