@@ -76,7 +76,7 @@ func LoadConfig(path string) (*Config, error) {
         return nil, fmt.Errorf("failed to parse config: %w", err)
     }
 
-    log.Printf("Loaded config: NetworkURL=%s, Wallets=%d, ScanInterval=%s", 
+    log.Printf("Loaded config: NetworkURL=%s, Wallets=%d, ScanInterval=%s",
         cfg.NetworkURL, len(cfg.Wallets), cfg.ScanInterval)
 
     return &cfg, nil

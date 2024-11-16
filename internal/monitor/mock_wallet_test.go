@@ -7,7 +7,7 @@ import (
 
 func TestMockWalletMonitor(t *testing.T) {
 	mock := NewMockWalletMonitor()
-	
+
 	// Test cases for different scenarios
 	testCases := []struct {
 		name     string
@@ -75,4 +75,4 @@ func TestMockWalletMonitor(t *testing.T) {
 			tc.check(t, data)
 		})
 	}
-} 
+}

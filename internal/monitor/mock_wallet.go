@@ -66,7 +66,7 @@ func (m *MockWalletMonitor) ScanAllWallets() (map[string]*WalletData, error) {
 			Decimals:   5,
 		}
 	}
-	
+
 	if elapsed >= 10*time.Second {
 		// Increase SOL balance after 10 seconds
 		baseWallet.TokenAccounts["So11111111111111111111111111111111111111112"] = TokenAccountInfo{
@@ -96,4 +96,4 @@ func (m *MockWalletMonitor) ScanAllWallets() (map[string]*WalletData, error) {
 	}
 
 	return results, nil
-} 
+}

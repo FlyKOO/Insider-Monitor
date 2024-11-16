@@ -42,4 +42,4 @@ func (a *ConsoleAlerter) SendAlert(alert Alert) error {
     }
     fmt.Println(message)
     return nil
-} 
+}

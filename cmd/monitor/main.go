@@ -29,7 +29,7 @@ func main() {
 	// Load configuration
 	var cfg *config.Config
 	var err error
-	
+
 	if *testMode {
 		cfg = config.GetTestConfig()
 		log.Println("Running in test mode with 5-second scan interval")
@@ -77,7 +77,7 @@ func main() {
 
 func runMonitor(scanner WalletScanner, alerter alerts.Alerter, cfg *config.Config, scanInterval time.Duration) {
 	storage := storage.New("./data")
-	
+
 	// Create buffered channels for graceful shutdown
 	interrupt := make(chan os.Signal, 1)
 	done := make(chan bool, 1)
@@ -86,7 +86,7 @@ func runMonitor(scanner WalletScanner, alerter alerts.Alerter, cfg *config.Confi
 	// Track connection state
 	var lastSuccessfulScan time.Time
 	var connectionLost bool
-	
+
 	// Define maximum allowed time between successful scans
 	maxTimeBetweenScans := scanInterval * 3
 
@@ -112,7 +112,7 @@ func runMonitor(scanner WalletScanner, alerter alerts.Alerter, cfg *config.Confi
 		lastSuccessfulScan = time.Now()
 		log.Printf("Initial scan complete. Found data for %d wallets", len(initialResults))
 	}
-	
+
 	// Start monitoring in a separate goroutine
 	go func() {
 		ticker := time.NewTicker(scanInterval)
@@ -225,7 +225,7 @@ func processChanges(changes []monitor.Change, alerter alerts.Alerter, alertCfg c
 			msg = fmt.Sprintf("Balance change for %s (%s): from %d to %d (%.2f%%)",
 				change.TokenSymbol, change.TokenMint,
 				change.OldBalance, change.NewBalance, change.ChangePercent)
-			
+
 			absChange := abs(change.ChangePercent)
 			switch {
 			case absChange >= (alertCfg.SignificantChange * 5):
@@ -235,7 +235,7 @@ func processChanges(changes []monitor.Change, alerter alerts.Alerter, alertCfg c
 			default:
 				level = alerts.Info
 			}
-			
+
 			alertData = map[string]interface{}{
 				"old_balance":    change.OldBalance,
 				"new_balance":    change.NewBalance,

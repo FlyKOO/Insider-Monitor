@@ -29,7 +29,7 @@ func NewWalletMonitor(networkURL string, wallets []string) (*WalletMonitor, erro
 		rate.Every(time.Second/4),
 		1,
 	))
-	
+
 	// Convert wallet addresses to PublicKeys
 	pubKeys := make([]solana.PublicKey, len(wallets))
 	for i, addr := range wallets {
@@ -91,10 +91,10 @@ func (w *WalletMonitor) getTokenAccountsWithRetry(wallet solana.PublicKey) (*rpc
 
         lastErr = err
         if strings.Contains(err.Error(), "429") {
-            log.Printf("Rate limited on attempt %d for wallet %s, waiting %v before retry", 
+            log.Printf("Rate limited on attempt %d for wallet %s, waiting %v before retry",
                       attempt+1, wallet.String(), backoff)
             time.Sleep(backoff)
-            
+
             // Exponential backoff with max
             backoff *= 2
             if backoff > maxBackoff {
@@ -102,7 +102,7 @@ func (w *WalletMonitor) getTokenAccountsWithRetry(wallet solana.PublicKey) (*rpc
             }
             continue
         }
-        
+
         // If it's not a rate limit error, return immediately
         return nil, err
     }
@@ -165,17 +165,17 @@ func calculatePercentageChange(old, new uint64) float64 {
     if old == 0 {
         return 100.0 // Return 100% for new additions
     }
-    
+
     // Convert to float64 before division to maintain precision
     oldFloat := float64(old)
     newFloat := float64(new)
-    
+
     // Calculate percentage change
     change := ((newFloat - oldFloat) / oldFloat) * 100.0
-    
+
     // Round to 2 decimal places to avoid floating point precision issues
     change = float64(int64(change*100)) / 100
-    
+
     return change
 }
 
@@ -203,15 +203,15 @@ func (w *WalletMonitor) ScanAllWallets() (map[string]*WalletData, error) {
 
     results := make(map[string]*WalletData)
     batchSize := 2
-    
+
     for i := 0; i < len(w.wallets); i += batchSize {
         end := i + batchSize
         if end > len(w.wallets) {
             end = len(w.wallets)
         }
-        
+
         log.Printf("Processing wallets %d-%d of %d", i+1, end, len(w.wallets))
-        
+
         // Process batch
         for _, wallet := range w.wallets[i:end] {
             data, err := w.GetWalletData(wallet)
@@ -221,7 +221,7 @@ func (w *WalletMonitor) ScanAllWallets() (map[string]*WalletData, error) {
             }
             results[wallet.String()] = data
         }
-        
+
         // Larger wait between batches
         if end < len(w.wallets) {
             waitTime := 3 * time.Second
@@ -229,26 +229,26 @@ func (w *WalletMonitor) ScanAllWallets() (map[string]*WalletData, error) {
             time.Sleep(waitTime)
         }
     }
-    
+
     return results, nil
 }
 
 func DetectChanges(oldData, newData map[string]*WalletData, significantChange float64) []Change {
     var changes []Change
-    
+
     // Check for changes in existing wallets
     for walletAddr, newData := range newData {
         oldData, existed := oldData[walletAddr]
-        
+
         // Skip new wallet detection
         if !existed {
             continue
         }
-        
+
         // Check for changes in existing wallet
         for mint, newInfo := range newData.TokenAccounts {
             oldInfo, existed := oldData.TokenAccounts[mint]
-            
+
             if !existed {
                 // New token detected
                 changes = append(changes, Change{
@@ -259,11 +259,11 @@ func DetectChanges(oldData, newData map[string]*WalletData, significantChange fl
                 })
                 continue
             }
-            
+
             // Check for significant balance changes
             pctChange := calculatePercentageChange(oldInfo.Balance, newInfo.Balance)
             absChange := abs(pctChange)
-            
+
             if absChange >= significantChange {
                 changes = append(changes, Change{
                     WalletAddress:  walletAddr,
@@ -278,7 +278,7 @@ func DetectChanges(oldData, newData map[string]*WalletData, significantChange fl
             }
         }
     }
-    
+
     return changes
 }
 
@@ -287,11 +287,11 @@ func formatTokenAmount(amount uint64, decimals uint8) string {
     if decimals == 0 {
         return fmt.Sprintf("%d", amount)
     }
-    
+
     // Convert to float64 and divide by 10^decimals
     divisor := math.Pow(10, float64(decimals))
     value := float64(amount) / divisor
-    
+
     // Format with appropriate decimal places
     if value >= 1000000 {
         // Use millions format: 1.23M
@@ -300,7 +300,7 @@ func formatTokenAmount(amount uint64, decimals uint8) string {
         // Use thousands format: 1.23K
         return fmt.Sprintf("%.2fK", value/1000)
     }
-    
+
     // Use standard format with max 4 decimal places
     return fmt.Sprintf("%.4f", value)
 }

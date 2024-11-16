@@ -73,7 +73,7 @@ func (d *DiscordAlerter) SendAlert(alert Alert) error {
                     newFormatted := utils.FormatTokenAmount(newBal, decimals)
                     symbol := safeGet("symbol").(string)
                     changePercent := safeGet("change_percent").(float64)
-                    
+
                     description = fmt.Sprintf("```diff\n- Old: %s\n+ New: %s\nChange: %+.2f%%```",
                         oldFormatted,
                         newFormatted,
@@ -82,7 +82,7 @@ func (d *DiscordAlerter) SendAlert(alert Alert) error {
                     // Add detailed token information as a field
                     fields = append(fields, field{
                         Name: "Token",
-                        Value: fmt.Sprintf("%s\n`%s`", 
+                        Value: fmt.Sprintf("%s\n`%s`",
                             symbol,
                             alert.TokenMint),
                         Inline: false,
@@ -102,7 +102,7 @@ func (d *DiscordAlerter) SendAlert(alert Alert) error {
                 // Add detailed token information as a field
                 fields = append(fields, field{
                     Name: "Token",
-                    Value: fmt.Sprintf("%s\n`%s`", 
+                    Value: fmt.Sprintf("%s\n`%s`",
                         symbol,
                         alert.TokenMint),
                     Inline: false,
@@ -160,4 +160,4 @@ func (d *DiscordAlerter) SendAlert(alert Alert) error {
 
     log.Printf("Successfully sent Discord alert (status: %d)", resp.StatusCode)
     return nil
-} 
+}
