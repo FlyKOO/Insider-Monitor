@@ -1,7 +1,8 @@
 # Solana Wallet Monitoring and On-Chain Analysis Tool
 
-[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/P5P5KGUSC)
+---
 
+## Current State of the System
 <div style="background-color: #1E1E2F; color: white; border-radius: 10px; padding: 20px; margin-bottom: 20px;">
     <h2 style="text-align: center;">🚀 Current State of the System</h2>
     <p style="text-align: center;">This project is in the <strong>very early stages</strong> of development. It currently monitors a selected list of Solana wallets, tracking new token holdings and balance changes. Alerts are sent to a dedicated channel on Discord, and <strong>all alerts should be treated with caution</strong>. Remember to do your own research (DYOR) when making any financial decisions based on this data.</p>
@@ -22,53 +23,45 @@ The vision is to develop a sophisticated Go-based tool for automated tracking an
 
 ---
 
-## Key Features
+## Support My Work
+If you find this project valuable and want to support its development, consider buying me a coffee:
 
-<div style="background-color: #2B2B3D; color: white; border-radius: 10px; padding: 20px; margin-bottom: 20px;">
-    <h3>1. Wallet Monitoring</h3>
-    <ul>
-        <li>Real-time tracking of multiple wallet addresses.</li>
-        <li>Listing token holdings and monitoring balance changes.</li>
-    </ul>
-    <p><strong>Status</strong>: Completed</p>
-</div>
-
-<div style="background-color: #2B2B3D; color: white; border-radius: 10px; padding: 20px; margin-bottom: 20px;">
-    <h3>2. Token Account Analysis</h3>
-    <ul>
-        <li>Use `gagliardetto/solana-go` SDK for blockchain interaction.</li>
-        <li>Analyze token balances, mint addresses, and account creation times.</li>
-    </ul>
-    <p><strong>Status</strong>: Completed</p>
-</div>
-
-<div style="background-color: #2B2B3D; color: white; border-radius: 10px; padding: 20px; margin-bottom: 20px;">
-    <h3>3. Data Persistence</h3>
-    <ul>
-        <li>JSON-based storage for easy data retrieval and analysis.</li>
-        <li>Historical tracking for trends and insights.</li>
-    </ul>
-    <p><strong>Status</strong>: Completed</p>
-</div>
-
-<div style="background-color: #2B2B3D; color: white; border-radius: 10px; padding: 20px; margin-bottom: 20px;">
-    <h3>4. Alerting System</h3>
-    <ul>
-        <li>Basic logging for alerts with plans for future expansion.</li>
-    </ul>
-    <p><strong>Status</strong>: Completed</p>
-</div>
-
-<div style="background-color: #2B2B3D; color: white; border-radius: 10px; padding: 20px;">
-    <h3>5. Testing and Optimization</h3>
-    <p>Comprehensive testing is in progress to ensure reliability.</p>
-    <p><strong>Status</strong>: Ongoing</p>
+<div style="text-align: center; margin-top: 20px;">
+    <a href="https://ko-fi.com/P5P5KGUSC">
+        <img src="https://ko-fi.com/img/githubbutton_sm.svg" alt="Support me on Ko-fi" style="border: 0;">
+    </a>
 </div>
 
 ---
 
-## Next Steps and Enhancements
+## Key Features
 
+### 1. Wallet Monitoring
+- Real-time tracking of multiple wallet addresses.
+- Listing token holdings and monitoring balance changes.
+- **Status**: Completed
+
+### 2. Token Account Analysis
+- Use `gagliardetto/solana-go` SDK for blockchain interaction.
+- Analyze token balances, mint addresses, and account creation times.
+- **Status**: Completed
+
+### 3. Data Persistence
+- JSON-based storage for easy data retrieval and analysis.
+- Historical tracking for trends and insights.
+- **Status**: Completed
+
+### 4. Alerting System
+- Basic logging for alerts with plans for future expansion.
+- **Status**: Completed
+
+### 5. Testing and Optimization
+- Comprehensive testing is in progress to ensure reliability.
+- **Status**: Ongoing
+
+---
+
+## Next Steps and Enhancements
 - **Behavior-Based Wallet Filtering**: Prioritize high-value wallets using behavior analysis.
 - **Coordinated Buying/Selling Detection**: Use clustering algorithms to detect coordinated wallet activities.
 - **Anomaly and Pattern Detection**: Use models to detect significant market behaviors.
@@ -99,9 +92,5 @@ The vision is to develop a sophisticated Go-based tool for automated tracking an
 Join the [**Discord server**](https://discord.gg/7vY9ZBPdya) to view real-time alerts, contribute to the project, and help shape its development. Your insights and feedback are invaluable!
 
 ---
-
-### Support My Work
-If you find this project valuable and want to support its development, consider buying me a coffee:
-[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/P5P5KGUSC)
 
 Let's build something incredible together!
