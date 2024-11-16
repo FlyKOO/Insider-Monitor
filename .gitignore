@@ -1,3 +1,8 @@
+# Binary output
+solana-monitor
+/bin/
+/dist/
+
 # Binaries for programs and plugins
 *.exe
 *.exe~
@@ -8,33 +13,54 @@
 # Test binary, built with `go test -c`
 *.test
 
-# Output of the go coverage tool, specifically when used with LiteIDE
+# Output of the go coverage tool
 *.out
+*.cov
+coverage.html
+coverage.txt
 
-# Dependency directories (remove the comment below to include it)
-# vendor/
+# Dependency directories
+vendor/
 
 # Go workspace file
 go.work
 go.work.sum
 
-# env file
+# Environment files
 .env
+.env.*
+!.env.example
 
-# Data Directory
-data/
-
-# Log Files
+# Data and Config files
+/data/
 *.log
-
-# Config File
 config.json
 *.json
+!example-config.json
 
-coverage.out
-coverage.html
+# IDE specific files
 .vscode/
 .idea/
 *.swp
 *.swo
 .DS_Store
+
+# Debug files
+__debug_bin
+debug.test
+
+# Temporary files
+*.tmp
+*.temp
+*~
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Pre-commit hook installation
+.pre-commit-config.yaml.cache
+
+# Backup files
+/tmp/solana-monitor-backup/
+*.backup
