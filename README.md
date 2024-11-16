@@ -1,4 +1,4 @@
-# Solana Wallet Monitoring and On-Chain Analysis Tool - Project Overview
+# Solana Wallet Monitoring and On-Chain Analysis Tool
 
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/P5P5KGUSC)
 
