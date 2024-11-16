@@ -182,24 +182,38 @@ func processChanges(changes []monitor.Change, alerter alerts.Alerter, alertCfg c
 	for _, change := range changes {
 		var msg string
 		var level alerts.AlertLevel
+		var alertData map[string]interface{}
 
 		switch change.ChangeType {
 		case "new_wallet":
 			// Create a consolidated message for all tokens
 			var tokenDetails []string
+			tokenData := make(map[string]uint64)
+			tokenDecimals := make(map[string]uint8)
 			for mint, balance := range change.TokenBalances {
 				tokenDetails = append(tokenDetails, fmt.Sprintf("%s: %d", mint, balance))
+				tokenData[mint] = balance
+				tokenDecimals[mint] = 9 // Default decimals, adjust if you have actual decimals
 			}
 			msg = fmt.Sprintf("New wallet %s detected with %d tokens:\n%s",
 				change.WalletAddress,
 				len(change.TokenBalances),
 				strings.Join(tokenDetails, "\n"))
 			level = alerts.Warning
+			alertData = map[string]interface{}{
+				"token_balances": tokenData,
+				"token_decimals": tokenDecimals,
+			}
 
 		case "new_token":
 			msg = fmt.Sprintf("New token detected in %s: %s with balance %d",
 				change.WalletAddress, change.TokenMint, change.NewBalance)
 			level = alerts.Warning
+			alertData = map[string]interface{}{
+				"balance":  change.NewBalance,
+				"decimals": change.TokenDecimals,
+				"symbol":   change.TokenSymbol,
+			}
 
 		case "balance_change":
 			msg = fmt.Sprintf("Balance change in %s: Token %s from %d to %d (%.2f%%)",
@@ -207,18 +221,24 @@ func processChanges(changes []monitor.Change, alerter alerts.Alerter, alertCfg c
 				change.OldBalance, change.NewBalance, change.ChangePercent)
 			
 			absChange := abs(change.ChangePercent)
-			// Adjust thresholds for more meaningful alerts
 			switch {
-			case absChange >= (alertCfg.SignificantChange * 5):  // Very large changes (e.g., 50% if base is 10%)
+			case absChange >= (alertCfg.SignificantChange * 5):
 				level = alerts.Critical
-			case absChange >= (alertCfg.SignificantChange * 2):  // Significant changes (e.g., 20% if base is 10%)
+			case absChange >= (alertCfg.SignificantChange * 2):
 				level = alerts.Warning
-			default:  // Changes that meet the minimum threshold but aren't dramatic
+			default:
 				level = alerts.Info
+			}
+			
+			alertData = map[string]interface{}{
+				"old_balance":    change.OldBalance,
+				"new_balance":    change.NewBalance,
+				"decimals":       change.TokenDecimals,
+				"symbol":         change.TokenSymbol,
+				"change_percent": change.ChangePercent,
 			}
 		}
 
-		// Only send alerts for Warning and Critical levels
 		if level >= alerts.Warning {
 			alert := alerts.Alert{
 				Timestamp:     time.Now(),
@@ -227,13 +247,7 @@ func processChanges(changes []monitor.Change, alerter alerts.Alerter, alertCfg c
 				AlertType:     change.ChangeType,
 				Message:       msg,
 				Level:        level,
-				Data: map[string]interface{}{
-					"old_balance":    change.OldBalance,
-					"new_balance":    change.NewBalance,
-					"decimals":      change.TokenDecimals,
-					"symbol":        change.TokenSymbol,
-					"change_percent": change.ChangePercent,
-				},
+				Data:         alertData,
 			}
 
 			if err := alerter.SendAlert(alert); err != nil {
@@ -241,7 +255,6 @@ func processChanges(changes []monitor.Change, alerter alerts.Alerter, alertCfg c
 			}
 			monitor.LogToFile("./data", msg)
 		} else {
-			// Just log info-level changes without alerting
 			monitor.LogToFile("./data", fmt.Sprintf("INFO: %s", msg))
 		}
 	}

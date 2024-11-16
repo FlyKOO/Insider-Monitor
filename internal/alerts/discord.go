@@ -53,34 +53,65 @@ func (d *DiscordAlerter) SendAlert(alert Alert) error {
         color = 0xFFA500 // Orange
     }
 
+    // Safely get values from the Data map
+    safeGet := func(key string) interface{} {
+        if alert.Data == nil {
+            return nil
+        }
+        return alert.Data[key]
+    }
+
     // Format the description based on alert type
     var description string
     switch alert.AlertType {
     case "balance_change":
-        oldBalance := utils.FormatTokenAmount(alert.Data["old_balance"].(uint64), alert.Data["decimals"].(uint8))
-        newBalance := utils.FormatTokenAmount(alert.Data["new_balance"].(uint64), alert.Data["decimals"].(uint8))
-        description = fmt.Sprintf("```diff\n%s\n- Old: %s\n+ New: %s\nChange: %+.2f%%```",
-            alert.Data["symbol"].(string),
-            oldBalance,
-            newBalance,
-            alert.Data["change_percent"].(float64))
+        if oldBal, ok := safeGet("old_balance").(uint64); ok {
+            if newBal, ok := safeGet("new_balance").(uint64); ok {
+                if decimals, ok := safeGet("decimals").(uint8); ok {
+                    oldFormatted := utils.FormatTokenAmount(oldBal, decimals)
+                    newFormatted := utils.FormatTokenAmount(newBal, decimals)
+                    symbol := safeGet("symbol").(string)
+                    changePercent := safeGet("change_percent").(float64)
+                    
+                    description = fmt.Sprintf("```diff\n%s\n- Old: %s\n+ New: %s\nChange: %+.2f%%```",
+                        symbol,
+                        oldFormatted,
+                        newFormatted,
+                        changePercent)
+                }
+            }
+        }
 
     case "new_token":
-        balance := utils.FormatTokenAmount(alert.Data["balance"].(uint64), alert.Data["decimals"].(uint8))
-        description = fmt.Sprintf("```ini\n[New Token Added]\nToken: %s\nInitial Balance: %s```",
-            alert.Data["symbol"].(string),
-            balance)
+        if balance, ok := safeGet("balance").(uint64); ok {
+            if decimals, ok := safeGet("decimals").(uint8); ok {
+                formatted := utils.FormatTokenAmount(balance, decimals)
+                symbol := safeGet("symbol").(string)
+                description = fmt.Sprintf("```ini\n[New Token Added]\nToken: %s\nInitial Balance: %s```",
+                    symbol,
+                    formatted)
+            }
+        }
 
     case "new_wallet":
         var tokenList strings.Builder
         tokenList.WriteString("```ini\n[Initial Token Balances]\n")
-        for symbol, balance := range alert.Data["token_balances"].(map[string]uint64) {
-            decimals := alert.Data["token_decimals"].(map[string]uint8)[symbol]
-            formatted := utils.FormatTokenAmount(balance, decimals)
-            tokenList.WriteString(fmt.Sprintf("%s: %s\n", symbol, formatted))
+        if balances, ok := safeGet("token_balances").(map[string]uint64); ok {
+            if decimals, ok := safeGet("token_decimals").(map[string]uint8); ok {
+                for symbol, balance := range balances {
+                    dec := decimals[symbol]
+                    formatted := utils.FormatTokenAmount(balance, dec)
+                    tokenList.WriteString(fmt.Sprintf("%s: %s\n", symbol, formatted))
+                }
+            }
         }
         tokenList.WriteString("```")
         description = tokenList.String()
+    }
+
+    // If we failed to generate a description, use a fallback
+    if description == "" {
+        description = fmt.Sprintf("```%s```", alert.Message)
     }
 
     msg := discordMessage{
