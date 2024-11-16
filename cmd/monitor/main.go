@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -179,37 +180,27 @@ func runMonitor(scanner WalletScanner, alerter alerts.Alerter, cfg *config.Confi
 
 func processChanges(changes []monitor.Change, alerter alerts.Alerter, alertCfg config.AlertConfig) {
 	for _, change := range changes {
-		// Skip if balance is below minimum threshold
-		if change.NewBalance < alertCfg.MinimumBalance {
-			continue
-		}
-
-		// Check if token should be ignored
-		shouldIgnore := false
-		for _, ignoredToken := range alertCfg.IgnoreTokens {
-			if change.TokenMint == ignoredToken {
-				 shouldIgnore = true
-				 break
-			}
-		}
-		if shouldIgnore {
-			continue
-		}
-
-		var (
-			msg   string
-			level alerts.AlertLevel
-		)
+		var msg string
+		var level alerts.AlertLevel
 
 		switch change.ChangeType {
 		case "new_wallet":
-			msg = fmt.Sprintf("New wallet %s: Token %s with balance %d",
-				change.WalletAddress, change.TokenMint, change.NewBalance)
+			// Create a consolidated message for all tokens
+			var tokenDetails []string
+			for mint, balance := range change.TokenBalances {
+				tokenDetails = append(tokenDetails, fmt.Sprintf("%s: %d", mint, balance))
+			}
+			msg = fmt.Sprintf("New wallet %s detected with %d tokens:\n%s",
+				change.WalletAddress,
+				len(change.TokenBalances),
+				strings.Join(tokenDetails, "\n"))
 			level = alerts.Info
+
 		case "new_token":
 			msg = fmt.Sprintf("New token detected in %s: %s with balance %d",
 				change.WalletAddress, change.TokenMint, change.NewBalance)
 			level = alerts.Warning
+
 		case "balance_change":
 			// Calculate percentage change
 			percentChange := float64(change.NewBalance-change.OldBalance) / float64(change.OldBalance)

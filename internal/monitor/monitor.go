@@ -155,6 +155,7 @@ type Change struct {
     OldBalance    uint64
     NewBalance    uint64
     ChangePercent float64
+    TokenBalances map[string]uint64 `json:",omitempty"`
 }
 
 func calculatePercentageChange(old, new uint64) float64 {
@@ -224,19 +225,18 @@ func (w *WalletMonitor) ScanAllWallets() (map[string]*WalletData, error) {
 func DetectChanges(old, new map[string]*WalletData) []Change {
     var changes []Change
     
+    // Track new wallets and their token balances
+    newWallets := make(map[string]map[string]uint64)
+    
     // Check each wallet in the new data
     for walletAddr, newData := range new {
         oldData, existed := old[walletAddr]
         
         if !existed {
-            // New wallet detected
+            // New wallet detected - collect all tokens
+            newWallets[walletAddr] = make(map[string]uint64)
             for mint, info := range newData.TokenAccounts {
-                changes = append(changes, Change{
-                    WalletAddress: walletAddr,
-                    TokenMint:     mint,
-                    ChangeType:    "new_wallet",
-                    NewBalance:    info.Balance,
-                })
+                newWallets[walletAddr][mint] = info.Balance
             }
             continue
         }
@@ -269,6 +269,15 @@ func DetectChanges(old, new map[string]*WalletData) []Change {
                 })
             }
         }
+    }
+    
+    // Add consolidated new wallet alerts
+    for walletAddr, tokenBalances := range newWallets {
+        changes = append(changes, Change{
+            WalletAddress:  walletAddr,
+            ChangeType:     "new_wallet",
+            TokenBalances:  tokenBalances,
+        })
     }
     
     return changes
