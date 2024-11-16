@@ -43,14 +43,14 @@ func (m *MockWalletMonitor) ScanAllWallets() (map[string]*WalletData, error) {
 			"So11111111111111111111111111111111111111112": { // SOL
 				Balance:     1000000000,
 				LastUpdated: now,
-				Symbol:     "SOL",
-				Decimals:   9,
+				Symbol:      "SOL",
+				Decimals:    9,
 			},
 			"EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v": { // USDC
 				Balance:     1000000,
 				LastUpdated: now,
-				Symbol:     "USDC",
-				Decimals:   6,
+				Symbol:      "USDC",
+				Decimals:    6,
 			},
 		},
 		LastScanned: now,
@@ -62,8 +62,8 @@ func (m *MockWalletMonitor) ScanAllWallets() (map[string]*WalletData, error) {
 		baseWallet.TokenAccounts["DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263"] = TokenAccountInfo{
 			Balance:     5000000,
 			LastUpdated: now,
-			Symbol:     "BONK",
-			Decimals:   5,
+			Symbol:      "BONK",
+			Decimals:    5,
 		}
 	}
 
@@ -72,8 +72,8 @@ func (m *MockWalletMonitor) ScanAllWallets() (map[string]*WalletData, error) {
 		baseWallet.TokenAccounts["So11111111111111111111111111111111111111112"] = TokenAccountInfo{
 			Balance:     2000000000,
 			LastUpdated: now,
-			Symbol:     "SOL",
-			Decimals:   9,
+			Symbol:      "SOL",
+			Decimals:    9,
 		}
 	}
 
@@ -87,8 +87,8 @@ func (m *MockWalletMonitor) ScanAllWallets() (map[string]*WalletData, error) {
 				"So11111111111111111111111111111111111111112": {
 					Balance:     5000000000,
 					LastUpdated: now,
-					Symbol:     "SOL",
-					Decimals:   9,
+					Symbol:      "SOL",
+					Decimals:    9,
 				},
 			},
 			LastScanned: now,

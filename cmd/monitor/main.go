@@ -179,7 +179,9 @@ func runMonitor(scanner WalletScanner, alerter alerts.Alerter, cfg *config.Confi
 	// Wait for interrupt signal
 	<-interrupt
 	log.Println("Shutting down gracefully...")
-	monitor.LogToFile("./data", "Monitor shutting down gracefully")
+	if err := monitor.LogToFile("./data", "Monitor shutting down gracefully"); err != nil {
+		log.Printf("Failed to write shutdown log: %v", err)
+	}
 	done <- true
 	time.Sleep(time.Second) // Give a moment for final cleanup
 }
@@ -252,16 +254,20 @@ func processChanges(changes []monitor.Change, alerter alerts.Alerter, alertCfg c
 				TokenMint:     change.TokenMint,
 				AlertType:     change.ChangeType,
 				Message:       msg,
-				Level:        level,
-				Data:         alertData,
+				Level:         level,
+				Data:          alertData,
 			}
 
 			if err := alerter.SendAlert(alert); err != nil {
 				log.Printf("failed to send alert: %v", err)
 			}
-			monitor.LogToFile("./data", msg)
+			if err := monitor.LogToFile("./data", msg); err != nil {
+				log.Printf("Failed to write log: %v", err)
+			}
 		} else {
-			monitor.LogToFile("./data", fmt.Sprintf("INFO: %s", msg))
+			if err := monitor.LogToFile("./data", fmt.Sprintf("INFO: %s", msg)); err != nil {
+				log.Printf("Failed to write info log: %v", err)
+			}
 		}
 	}
 }

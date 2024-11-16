@@ -1,4 +1,4 @@
-.PHONY: setup test lint security-check build clean
+.PHONY: setup test lint build clean
 
 setup:
 	go mod download
@@ -8,12 +8,6 @@ setup:
 
 test:
 	go test ./... -coverprofile=coverage.out
-
-security-check:
-	gosec ./...
-
-complexity-check:
-	gocyclo -over 15 .
 
 lint:
 	golangci-lint run

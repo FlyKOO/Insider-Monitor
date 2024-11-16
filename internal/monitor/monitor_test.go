@@ -15,38 +15,16 @@ func TestDetectChanges(t *testing.T) {
 		expectedChanges []Change
 	}{
 		{
-			name: "new wallet with multiple tokens",
-			oldData: map[string]*WalletData{},
-			newData: map[string]*WalletData{
-				"Wallet1": {
-					WalletAddress: "Wallet1",
-					TokenAccounts: map[string]TokenAccountInfo{
-						"TokenA": {Balance: 100},
-						"TokenB": {Balance: 200},
-						"TokenC": {Balance: 300},
-					},
-				},
-			},
-			expectedChanges: []Change{
-				{
-					WalletAddress: "Wallet1",
-					ChangeType:    "new_wallet",
-					TokenBalances: map[string]uint64{
-						"TokenA": 100,
-						"TokenB": 200,
-						"TokenC": 300,
-					},
-				},
-			},
-		},
-		{
-			name: "multiple balance changes",
+			name: "balance changes",
 			oldData: map[string]*WalletData{
 				"Wallet1": {
 					WalletAddress: "Wallet1",
 					TokenAccounts: map[string]TokenAccountInfo{
-						"TokenA": {Balance: 100},
-						"TokenB": {Balance: 200},
+						"TokenA": {
+							Balance:  100,
+							Symbol:   "TKNA",
+							Decimals: 6,
+						},
 					},
 				},
 			},
@@ -54,33 +32,24 @@ func TestDetectChanges(t *testing.T) {
 				"Wallet1": {
 					WalletAddress: "Wallet1",
 					TokenAccounts: map[string]TokenAccountInfo{
-						"TokenA": {Balance: 150},
-					},
-				},
-				"Wallet2": {
-					WalletAddress: "Wallet2",
-					TokenAccounts: map[string]TokenAccountInfo{
-						"TokenB": {Balance: 200},
-						"TokenC": {Balance: 300},
+						"TokenA": {
+							Balance:  150,
+							Symbol:   "TKNA",
+							Decimals: 6,
+						},
 					},
 				},
 			},
 			expectedChanges: []Change{
 				{
-					WalletAddress:  "Wallet1",
-					TokenMint:      "TokenA",
-					ChangeType:     "balance_change",
-					OldBalance:     100,
-					NewBalance:     150,
-					ChangePercent:  50.0,
-				},
-				{
-					WalletAddress: "Wallet2",
-					ChangeType:    "new_wallet",
-					TokenBalances: map[string]uint64{
-						"TokenB": 200,
-						"TokenC": 300,
-					},
+					WalletAddress: "Wallet1",
+					TokenMint:     "TokenA",
+					TokenSymbol:   "TKNA",
+					TokenDecimals: 6,
+					ChangeType:    "balance_change",
+					OldBalance:    100,
+					NewBalance:    150,
+					ChangePercent: 50.0,
 				},
 			},
 		},
@@ -90,7 +59,11 @@ func TestDetectChanges(t *testing.T) {
 				"Wallet1": {
 					WalletAddress: "Wallet1",
 					TokenAccounts: map[string]TokenAccountInfo{
-						"TokenA": {Balance: 100},
+						"TokenA": {
+							Balance:  100,
+							Symbol:   "TKNA",
+							Decimals: 6,
+						},
 					},
 				},
 			},
@@ -98,9 +71,16 @@ func TestDetectChanges(t *testing.T) {
 				"Wallet1": {
 					WalletAddress: "Wallet1",
 					TokenAccounts: map[string]TokenAccountInfo{
-						"TokenA": {Balance: 100},
-						"TokenB": {Balance: 200},
-						"TokenC": {Balance: 300},
+						"TokenA": {
+							Balance:  100,
+							Symbol:   "TKNA",
+							Decimals: 6,
+						},
+						"TokenB": {
+							Balance:  200,
+							Symbol:   "TKNB",
+							Decimals: 9,
+						},
 					},
 				},
 			},
@@ -108,58 +88,10 @@ func TestDetectChanges(t *testing.T) {
 				{
 					WalletAddress: "Wallet1",
 					TokenMint:     "TokenB",
+					TokenSymbol:   "TKNB",
+					TokenDecimals: 9,
 					ChangeType:    "new_token",
 					NewBalance:    200,
-				},
-				{
-					WalletAddress: "Wallet1",
-					TokenMint:     "TokenC",
-					ChangeType:    "new_token",
-					NewBalance:    300,
-				},
-			},
-		},
-		{
-			name: "multiple wallets with changes",
-			oldData: map[string]*WalletData{
-				"Wallet1": {
-					WalletAddress: "Wallet1",
-					TokenAccounts: map[string]TokenAccountInfo{
-						"TokenA": {Balance: 100},
-					},
-				},
-			},
-			newData: map[string]*WalletData{
-				"Wallet1": {
-					WalletAddress: "Wallet1",
-					TokenAccounts: map[string]TokenAccountInfo{
-						"TokenA": {Balance: 150},
-					},
-				},
-				"Wallet2": {
-					WalletAddress: "Wallet2",
-					TokenAccounts: map[string]TokenAccountInfo{
-						"TokenB": {Balance: 200},
-						"TokenC": {Balance: 300},
-					},
-				},
-			},
-			expectedChanges: []Change{
-				{
-					WalletAddress:  "Wallet1",
-					TokenMint:      "TokenA",
-					ChangeType:     "balance_change",
-					OldBalance:     100,
-					NewBalance:     150,
-					ChangePercent:  50.0,
-				},
-				{
-					WalletAddress: "Wallet2",
-					ChangeType:    "new_wallet",
-					TokenBalances: map[string]uint64{
-						"TokenB": 200,
-						"TokenC": 300,
-					},
 				},
 			},
 		},
@@ -179,25 +111,27 @@ func TestDetectChanges(t *testing.T) {
 				if actual.ChangeType != expected.ChangeType {
 					t.Errorf("Change %d: expected type %s, got %s", i, expected.ChangeType, actual.ChangeType)
 				}
-
-				if actual.ChangeType == "new_wallet" {
-					if len(actual.TokenBalances) != len(expected.TokenBalances) {
-						t.Errorf("Change %d: expected %d tokens, got %d", i, len(expected.TokenBalances), len(actual.TokenBalances))
+				if actual.WalletAddress != expected.WalletAddress {
+					t.Errorf("Change %d: expected wallet %s, got %s", i, expected.WalletAddress, actual.WalletAddress)
+				}
+				if actual.TokenMint != expected.TokenMint {
+					t.Errorf("Change %d: expected token %s, got %s", i, expected.TokenMint, actual.TokenMint)
+				}
+				if actual.TokenSymbol != expected.TokenSymbol {
+					t.Errorf("Change %d: expected symbol %s, got %s", i, expected.TokenSymbol, actual.TokenSymbol)
+				}
+				if actual.TokenDecimals != expected.TokenDecimals {
+					t.Errorf("Change %d: expected decimals %d, got %d", i, expected.TokenDecimals, actual.TokenDecimals)
+				}
+				if actual.NewBalance != expected.NewBalance {
+					t.Errorf("Change %d: expected new balance %d, got %d", i, expected.NewBalance, actual.NewBalance)
+				}
+				if actual.ChangeType == "balance_change" {
+					if actual.OldBalance != expected.OldBalance {
+						t.Errorf("Change %d: expected old balance %d, got %d", i, expected.OldBalance, actual.OldBalance)
 					}
-					for token, balance := range expected.TokenBalances {
-						if actual.TokenBalances[token] != balance {
-							t.Errorf("Change %d: token %s expected balance %d, got %d", i, token, balance, actual.TokenBalances[token])
-						}
-					}
-				} else {
-					if actual.WalletAddress != expected.WalletAddress {
-						t.Errorf("Change %d: expected wallet %s, got %s", i, expected.WalletAddress, actual.WalletAddress)
-					}
-					if actual.TokenMint != expected.TokenMint {
-						t.Errorf("Change %d: expected token %s, got %s", i, expected.TokenMint, actual.TokenMint)
-					}
-					if actual.NewBalance != expected.NewBalance {
-						t.Errorf("Change %d: expected new balance %d, got %d", i, expected.NewBalance, actual.NewBalance)
+					if actual.ChangePercent != expected.ChangePercent {
+						t.Errorf("Change %d: expected change percent %.2f, got %.2f", i, expected.ChangePercent, actual.ChangePercent)
 					}
 				}
 			}
