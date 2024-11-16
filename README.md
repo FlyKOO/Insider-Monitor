@@ -7,8 +7,9 @@
     <p style="text-align: center;">This project is in the <strong>very early stages</strong> of development. It currently monitors a selected list of Solana wallets, tracking new token holdings and balance changes. Alerts are sent to a dedicated channel on Discord, and <strong>all alerts should be treated with caution</strong>. Remember to do your own research (DYOR) when making any financial decisions based on this data.</p>
     <div style="text-align: center; margin-top: 15px;">
         <a href="https://discord.gg/7vY9ZBPdya" style="display: inline-block; background-color: #7289DA; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none; font-weight: bold;">
-            👉 Join Our Discord Community
+            👉 Join The Discord Community
         </a>
+        </br>
     </div>
     <p style="text-align: center; margin-top: 15px; font-style: italic;">⚠️ This tool is experimental. Alerts are for informational purposes and may not always indicate actionable insights. Use with caution.</p>
 </div>
