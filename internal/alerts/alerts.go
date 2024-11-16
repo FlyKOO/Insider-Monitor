@@ -20,7 +20,7 @@ type Alert struct {
     AlertType     string
     Message       string
     Level         AlertLevel
-    Data          map[string]interface{} // Additional data
+    Data          map[string]interface{} // Additional data for formatting
 }
 
 type Alerter interface {

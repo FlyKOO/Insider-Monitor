@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"math"
 	"strings"
 	"time"
 
@@ -151,6 +152,8 @@ func (w *WalletMonitor) GetWalletData(wallet solana.PublicKey) (*WalletData, err
 type Change struct {
     WalletAddress  string
     TokenMint      string
+    TokenSymbol    string    // Add symbol
+    TokenDecimals  uint8     // Add decimals
     ChangeType     string
     OldBalance     uint64
     NewBalance     uint64
@@ -273,6 +276,8 @@ func DetectChanges(old, new map[string]*WalletData, significantChange float64) [
                 changes = append(changes, Change{
                     WalletAddress:  walletAddr,
                     TokenMint:      mint,
+                    TokenSymbol:    newInfo.Symbol,
+                    TokenDecimals:  newInfo.Decimals,
                     ChangeType:     "balance_change",
                     OldBalance:     oldInfo.Balance,
                     NewBalance:     newInfo.Balance,
@@ -292,4 +297,27 @@ func DetectChanges(old, new map[string]*WalletData, significantChange float64) [
     }
     
     return changes
+}
+
+// Add this helper function
+func formatTokenAmount(amount uint64, decimals uint8) string {
+    if decimals == 0 {
+        return fmt.Sprintf("%d", amount)
+    }
+    
+    // Convert to float64 and divide by 10^decimals
+    divisor := math.Pow(10, float64(decimals))
+    value := float64(amount) / divisor
+    
+    // Format with appropriate decimal places
+    if value >= 1000000 {
+        // Use millions format: 1.23M
+        return fmt.Sprintf("%.2fM", value/1000000)
+    } else if value >= 1000 {
+        // Use thousands format: 1.23K
+        return fmt.Sprintf("%.2fK", value/1000)
+    }
+    
+    // Use standard format with max 4 decimal places
+    return fmt.Sprintf("%.4f", value)
 }

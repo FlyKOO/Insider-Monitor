@@ -224,9 +224,16 @@ func processChanges(changes []monitor.Change, alerter alerts.Alerter, alertCfg c
 				Timestamp:     time.Now(),
 				WalletAddress: change.WalletAddress,
 				TokenMint:     change.TokenMint,
-					AlertType:     change.ChangeType,
-					Message:       msg,
-					Level:        level,
+				AlertType:     change.ChangeType,
+				Message:       msg,
+				Level:        level,
+				Data: map[string]interface{}{
+					"old_balance":    change.OldBalance,
+					"new_balance":    change.NewBalance,
+					"decimals":      change.TokenDecimals,
+					"symbol":        change.TokenSymbol,
+					"change_percent": change.ChangePercent,
+				},
 			}
 
 			if err := alerter.SendAlert(alert); err != nil {

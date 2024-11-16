@@ -7,7 +7,9 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"time"
+	"strings"
+
+	"github.com/accursedgalaxy/insider-monitor/internal/utils"
 )
 
 type DiscordAlerter struct {
@@ -51,16 +53,45 @@ func (d *DiscordAlerter) SendAlert(alert Alert) error {
         color = 0xFFA500 // Orange
     }
 
+    // Format the description based on alert type
+    var description string
+    switch alert.AlertType {
+    case "balance_change":
+        oldBalance := utils.FormatTokenAmount(alert.Data["old_balance"].(uint64), alert.Data["decimals"].(uint8))
+        newBalance := utils.FormatTokenAmount(alert.Data["new_balance"].(uint64), alert.Data["decimals"].(uint8))
+        description = fmt.Sprintf("```diff\n%s\n- Old: %s\n+ New: %s\nChange: %+.2f%%```",
+            alert.Data["symbol"].(string),
+            oldBalance,
+            newBalance,
+            alert.Data["change_percent"].(float64))
+
+    case "new_token":
+        balance := utils.FormatTokenAmount(alert.Data["balance"].(uint64), alert.Data["decimals"].(uint8))
+        description = fmt.Sprintf("```ini\n[New Token Added]\nToken: %s\nInitial Balance: %s```",
+            alert.Data["symbol"].(string),
+            balance)
+
+    case "new_wallet":
+        var tokenList strings.Builder
+        tokenList.WriteString("```ini\n[Initial Token Balances]\n")
+        for symbol, balance := range alert.Data["token_balances"].(map[string]uint64) {
+            decimals := alert.Data["token_decimals"].(map[string]uint8)[symbol]
+            formatted := utils.FormatTokenAmount(balance, decimals)
+            tokenList.WriteString(fmt.Sprintf("%s: %s\n", symbol, formatted))
+        }
+        tokenList.WriteString("```")
+        description = tokenList.String()
+    }
+
     msg := discordMessage{
         Username: "Solana Wallet Monitor",
         Embeds: []embed{{
-            Title:       fmt.Sprintf("%s Alert", alert.AlertType),
-            Description: alert.Message,
+            Title:       fmt.Sprintf("%s Alert", strings.ToUpper(alert.AlertType)),
+            Description: description,
             Color:      color,
             Fields: []field{
-                {Name: "Wallet", Value: alert.WalletAddress, Inline: true},
-                {Name: "Token", Value: alert.TokenMint, Inline: true},
-                {Name: "Time", Value: alert.Timestamp.Format(time.RFC3339), Inline: false},
+                {Name: "Wallet", Value: fmt.Sprintf("`%s`", alert.WalletAddress), Inline: true},
+                {Name: "Time", Value: alert.Timestamp.Format("2006-01-02 15:04:05 MST"), Inline: true},
             },
         }},
     }
