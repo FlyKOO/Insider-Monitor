@@ -1,133 +1,110 @@
 # Solana Wallet Monitoring and On-Chain Analysis Tool - Project Overview
 
-## Project Vision
-The vision for this project is to develop a sophisticated Go-based tool that automates the tracking and analysis of Solana wallet behaviors,
-offering comprehensive insights into token movements and potential insider trading activities.
-
-The system will evolve from a basic monitoring tool to a comprehensive on-chain analysis platform.
-
-**Building in Public**: Follow along as this project grows and evolves!
-Contributions, feedback, and discussions are highly encouraged to shape this tool into the ultimate on-chain analysis resource.
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/P5P5KGUSC)
 
 ---
 
-## Current Status
-The current version monitors a defined list of Solana wallets for new token holdings and balance changes, storing data in a simple JSON-based system and providing basic alerts.
-The foundation is set, and it's time to enhance the system with more advanced features!
+## Current State of the System
+This project is in the **very early stages** of development. It currently monitors a selected list of Solana wallets, tracking new token holdings and balance changes. Alerts are sent to a dedicated channel on Discord, and **all alerts should be treated with caution**. Remember to do your own research (DYOR) when making any financial decisions based on this data.
+
+⚠️ **Disclaimer**: This tool is experimental. Alerts are for informational purposes and may not always indicate actionable insights. Use this tool to aid your analysis but proceed with caution.
+
+### Want to See the System in Action?
+Join the [**Discord server**](#) to:
+- View the alerts in real time.
+- Help vet wallet behavior and give feedback.
+- Participate in shaping the tool’s future features.
+
+---
+
+## Project Vision
+The vision is to develop a sophisticated Go-based tool for automated tracking and analysis of Solana wallet behaviors. The project will evolve from a simple monitoring tool into a comprehensive on-chain analysis platform capable of identifying potential insider trading activities.
+
+**Building in Public**: Follow along as the project develops! Contributions, feedback, and discussions are welcome and encouraged.
 
 ---
 
 ## Key Features
 
 ### 1. **Wallet Monitoring**
-   - Real-time monitoring of multiple wallet addresses.
-   - Fetch and list current token holdings and balances.
-   - Detect and track new token additions and significant balance changes.
+   - Real-time tracking of multiple wallet addresses.
+   - Listing token holdings and monitoring balance changes.
    - **Status**: Completed
 
 ### 2. **Token Account Analysis**
-   - Utilize the `gagliardetto/solana-go` SDK for blockchain interactions.
-   - Retrieve token balances, mint addresses, and account creation times to prevent redundant alerts.
+   - Use `gagliardetto/solana-go` SDK for blockchain interaction.
+   - Retrieve and analyze token balances, mint addresses, and account creation times.
    - **Status**: Completed
 
 ### 3. **Data Persistence**
-   - Efficiently store wallet and token data in a JSON file or lightweight database.
-   - Maintain historical records for trend analysis.
+   - JSON-based storage for easy data retrieval and analysis.
+   - Historical tracking for trends and insights.
    - **Status**: Completed
 
 ### 4. **Alerting System**
-   - Basic logging-based alerts with plans for future enhancements.
+   - Basic logging for alerts with plans for future expansion.
    - **Status**: Completed
 
 ### 5. **Testing and Optimization**
-   - Comprehensive testing to ensure reliability and efficiency.
-   - **Status**: In Progress
+   - In-progress testing to ensure reliability.
+   - **Status**: Ongoing
 
 ---
 
-## Next Steps and Strategic Enhancements
+## Next Steps and Enhancements
 
-### 1. **Behavior-Based Wallet Filtering**
-   - Develop filters to prioritize high-value wallets.
-   - Focus on wallets with consistent, repeatable, and profitable trading behaviors.
-   - **Action Items**:
-     - Define criteria for high-value behaviors (e.g., historical profit, frequency of strategic trades).
-     - Implement a scoring system to rank wallets based on these criteria.
+### **Behavior-Based Wallet Filtering**
+- **Goal**: Prioritize high-value wallets using behavior analysis.
+- **Action Items**:
+  - Define criteria for profitable or strategic trading behavior.
+  - Implement a scoring system to rank wallets.
 
-### 2. **Cluster and Group Monitoring**
-   - Implement clustering techniques to identify groups of wallets that exhibit coordinated behavior.
-   - Use data science methods to detect patterns of simultaneous buying/selling.
-   - **Approach**:
-     - **Data Collection**: Track the transaction history of each wallet and record token movements.
-     - **Feature Extraction**: Extract relevant features like transaction timestamps, token types, and amounts.
-     - **Clustering Algorithms**: Use algorithms like DBSCAN or K-Means to group wallets based on transaction similarities.
-     - **Pattern Recognition**: Analyze clusters to identify if multiple wallets are trading the same token at the same time.
-   - **Outcome**: A system that alerts when a coordinated activity is detected.
+### **Coordinated Buying/Selling Detection**
+- **Goal**: Detect coordinated wallet activities using clustering algorithms.
+- **Action Items**:
+  - Track transaction history and analyze token movements.
+  - Apply clustering methods to identify coordinated behavior.
 
-### 3. **Anomaly and Pattern Detection**
-   - Build models to detect anomalies such as dormant wallets suddenly becoming active or large, unusual transactions.
-   - **Approach**:
-     - Implement rule-based systems for detecting straightforward anomalies.
-     - Use machine learning for more complex pattern recognition.
-   - **Potential Models**: Isolation Forests for anomaly detection or time-series models for activity predictions.
+### **Anomaly and Pattern Detection**
+- **Goal**: Use models to detect anomalies and significant market patterns.
+- **Approach**:
+  - Implement rule-based detection for simple anomalies.
+  - Explore machine learning for advanced recognition.
 
-### 4. **Coordinated Buying/Selling Detection**
-   - Develop a system to flag tokens being bought or sold by multiple wallets in a short time frame.
-   - **Steps to Implement**:
-     - **Transaction Aggregation**: Collect and aggregate transactions for analysis.
-     - **Correlation Analysis**: Calculate correlation coefficients to see if wallets are acting in tandem.
-     - **Alert System**: Extend the alerting mechanism to notify when coordinated trades are detected.
+### **Web Dashboard Development**
+- **Goal**: Create a user-friendly web interface for real-time insights.
+- **Action Items**:
+  - Build intuitive visualizations.
+  - Provide easy-to-use tools for wallet and token analysis.
 
 ---
 
-## Considerations & Restrictions
+## Roadmap
 
-### 1. **Data Acquisition and Rate Limits**
-   - Stay within Solana RPC rate limits.
-   - Implement efficient and cached data fetching strategies.
+### Phase 1: Initial Setup and Basic Monitoring
+- Completed core features for monitoring and alerting.
 
-### 2. **Scalability**
-   - Ensure the architecture can handle an increasing number of wallets.
-   - Plan for database migration if needed as the data volume grows.
+### Phase 2: Wallet Filtering and Scoring
+- Develop criteria and implement wallet ranking.
 
----
+### Phase 3: Pattern and Anomaly Detection
+- Use data science techniques for deeper analysis.
 
-## Roadmap for Future Development
+### Phase 4: Web Dashboard Integration
+- Build and deploy a web interface.
 
-### Phase 6: Advanced Wallet Filtering and Scoring
-- **Goal**: Develop a scoring system to rank and filter high-value wallets.
-- **Tasks**:
-  - Define metrics for wallet scoring (e.g., historical profits, token diversity).
-  - Implement algorithms to calculate and store wallet scores.
-
-### Phase 7: Clustering and Coordinated Activity Detection
-- **Goal**: Implement clustering to detect coordinated buying/selling.
-- **Tasks**:
-  - Extract transaction features and apply clustering algorithms.
-  - Develop a system to monitor and alert for group activity.
-
-### Phase 8: Anomaly Detection and Machine Learning
-- **Goal**: Add machine learning models for sophisticated pattern recognition.
-- **Tasks**:
-  - Train and deploy models to detect unusual activities.
-  - Implement automated anomaly alerts.
-
-### Phase 9: Web Dashboard and Visualization
-- **Goal**: Build a web-based dashboard for real-time insights.
-- **Tasks**:
-  - Design intuitive visualizations for wallet activity and patterns.
-  - Integrate the monitoring tool with the web interface.
-
-### Phase 10: Community Engagement and Collaboration
-- **Goal**: Engage the on-chain analysis community for feedback and contributions.
-- **Tasks**:
-  - Share progress updates and gather community input.
-  - Implement requested features and enhancements based on feedback.
+### Phase 5: Community Collaboration
+- Gather feedback and iterate based on user suggestions.
 
 ---
 
-## Conclusion
-This project is evolving into a comprehensive on-chain analysis tool, capable of identifying and analyzing complex market behaviors.
-By leveraging data science and community insights, we aim to create an indispensable resource for crypto enthusiasts and traders.
+## Community and Support
+Help shape this project by joining the [**Discord server**](#) and engaging with the community. Your insights and feedback are invaluable!
 
-Join me in building this tool in public and shaping the future of on-chain analysis!
+---
+
+### Support My Work
+If you find this project valuable and want to support its development, consider buying me a coffee:
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/P5P5KGUSC)
+
+Let's build something incredible together!
