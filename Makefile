@@ -7,7 +7,13 @@ setup:
 	pre-commit install
 
 test:
-	go test -v -race -cover ./...
+	go test ./... -coverprofile=coverage.out
+
+security-check:
+	gosec ./...
+
+complexity-check:
+	gocyclo -over 15 .
 
 lint:
 	golangci-lint run
