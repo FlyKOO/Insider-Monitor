@@ -30,3 +30,11 @@ data/
 # Config File
 config.json
 *.json
+
+coverage.out
+coverage.html
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
