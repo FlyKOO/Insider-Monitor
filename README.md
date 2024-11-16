@@ -2,23 +2,21 @@
 
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/P5P5KGUSC)
 
----
-
-## Current State of the System
-This project is in the **very early stages** of development. It currently monitors a selected list of Solana wallets, tracking new token holdings and balance changes. Alerts are sent to a dedicated channel on Discord, and **all alerts should be treated with caution**. Remember to do your own research (DYOR) when making any financial decisions based on this data.
-
-⚠️ **Disclaimer**: This tool is experimental. Alerts are for informational purposes and may not always indicate actionable insights. Use this tool to aid your analysis but proceed with caution.
-
-### Want to See the System in Action?
-Join the [**Discord server**](#) to:
-- View the alerts in real time.
-- Help vet wallet behavior and give feedback.
-- Participate in shaping the tool’s future features.
+<div style="background-color: #1E1E2F; color: white; border-radius: 10px; padding: 20px; margin-bottom: 20px;">
+    <h2 style="text-align: center;">🚀 Current State of the System</h2>
+    <p style="text-align: center;">This project is in the <strong>very early stages</strong> of development. It currently monitors a selected list of Solana wallets, tracking new token holdings and balance changes. Alerts are sent to a dedicated channel on Discord, and <strong>all alerts should be treated with caution</strong>. Remember to do your own research (DYOR) when making any financial decisions based on this data.</p>
+    <div style="text-align: center; margin-top: 15px;">
+        <a href="https://discord.gg/7vY9ZBPdya" style="display: inline-block; background-color: #7289DA; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none; font-weight: bold;">
+            👉 Join Our Discord Community
+        </a>
+    </div>
+    <p style="text-align: center; margin-top: 15px; font-style: italic;">⚠️ This tool is experimental. Alerts are for informational purposes and may not always indicate actionable insights. Use with caution.</p>
+</div>
 
 ---
 
 ## Project Vision
-The vision is to develop a sophisticated Go-based tool for automated tracking and analysis of Solana wallet behaviors. The project will evolve from a simple monitoring tool into a comprehensive on-chain analysis platform capable of identifying potential insider trading activities.
+The vision is to develop a sophisticated Go-based tool for automated tracking and analysis of Solana wallet behaviors. This project will evolve from a simple monitoring tool into a comprehensive on-chain analysis platform capable of identifying potential insider trading activities.
 
 **Building in Public**: Follow along as the project develops! Contributions, feedback, and discussions are welcome and encouraged.
 
@@ -26,63 +24,62 @@ The vision is to develop a sophisticated Go-based tool for automated tracking an
 
 ## Key Features
 
-### 1. **Wallet Monitoring**
-   - Real-time tracking of multiple wallet addresses.
-   - Listing token holdings and monitoring balance changes.
-   - **Status**: Completed
+<div style="background-color: #2B2B3D; color: white; border-radius: 10px; padding: 20px; margin-bottom: 20px;">
+    <h3>1. Wallet Monitoring</h3>
+    <ul>
+        <li>Real-time tracking of multiple wallet addresses.</li>
+        <li>Listing token holdings and monitoring balance changes.</li>
+    </ul>
+    <p><strong>Status</strong>: Completed</p>
+</div>
 
-### 2. **Token Account Analysis**
-   - Use `gagliardetto/solana-go` SDK for blockchain interaction.
-   - Retrieve and analyze token balances, mint addresses, and account creation times.
-   - **Status**: Completed
+<div style="background-color: #2B2B3D; color: white; border-radius: 10px; padding: 20px; margin-bottom: 20px;">
+    <h3>2. Token Account Analysis</h3>
+    <ul>
+        <li>Use `gagliardetto/solana-go` SDK for blockchain interaction.</li>
+        <li>Analyze token balances, mint addresses, and account creation times.</li>
+    </ul>
+    <p><strong>Status</strong>: Completed</p>
+</div>
 
-### 3. **Data Persistence**
-   - JSON-based storage for easy data retrieval and analysis.
-   - Historical tracking for trends and insights.
-   - **Status**: Completed
+<div style="background-color: #2B2B3D; color: white; border-radius: 10px; padding: 20px; margin-bottom: 20px;">
+    <h3>3. Data Persistence</h3>
+    <ul>
+        <li>JSON-based storage for easy data retrieval and analysis.</li>
+        <li>Historical tracking for trends and insights.</li>
+    </ul>
+    <p><strong>Status</strong>: Completed</p>
+</div>
 
-### 4. **Alerting System**
-   - Basic logging for alerts with plans for future expansion.
-   - **Status**: Completed
+<div style="background-color: #2B2B3D; color: white; border-radius: 10px; padding: 20px; margin-bottom: 20px;">
+    <h3>4. Alerting System</h3>
+    <ul>
+        <li>Basic logging for alerts with plans for future expansion.</li>
+    </ul>
+    <p><strong>Status</strong>: Completed</p>
+</div>
 
-### 5. **Testing and Optimization**
-   - In-progress testing to ensure reliability.
-   - **Status**: Ongoing
+<div style="background-color: #2B2B3D; color: white; border-radius: 10px; padding: 20px;">
+    <h3>5. Testing and Optimization</h3>
+    <p>Comprehensive testing is in progress to ensure reliability.</p>
+    <p><strong>Status</strong>: Ongoing</p>
+</div>
 
 ---
 
 ## Next Steps and Enhancements
 
-### **Behavior-Based Wallet Filtering**
-- **Goal**: Prioritize high-value wallets using behavior analysis.
-- **Action Items**:
-  - Define criteria for profitable or strategic trading behavior.
-  - Implement a scoring system to rank wallets.
-
-### **Coordinated Buying/Selling Detection**
-- **Goal**: Detect coordinated wallet activities using clustering algorithms.
-- **Action Items**:
-  - Track transaction history and analyze token movements.
-  - Apply clustering methods to identify coordinated behavior.
-
-### **Anomaly and Pattern Detection**
-- **Goal**: Use models to detect anomalies and significant market patterns.
-- **Approach**:
-  - Implement rule-based detection for simple anomalies.
-  - Explore machine learning for advanced recognition.
-
-### **Web Dashboard Development**
-- **Goal**: Create a user-friendly web interface for real-time insights.
-- **Action Items**:
-  - Build intuitive visualizations.
-  - Provide easy-to-use tools for wallet and token analysis.
+- **Behavior-Based Wallet Filtering**: Prioritize high-value wallets using behavior analysis.
+- **Coordinated Buying/Selling Detection**: Use clustering algorithms to detect coordinated wallet activities.
+- **Anomaly and Pattern Detection**: Use models to detect significant market behaviors.
+- **Web Dashboard Development**: Create a user-friendly interface for real-time insights.
 
 ---
 
 ## Roadmap
 
 ### Phase 1: Initial Setup and Basic Monitoring
-- Completed core features for monitoring and alerting.
+- Core features for monitoring and alerting are completed.
 
 ### Phase 2: Wallet Filtering and Scoring
 - Develop criteria and implement wallet ranking.
@@ -99,7 +96,7 @@ The vision is to develop a sophisticated Go-based tool for automated tracking an
 ---
 
 ## Community and Support
-Help shape this project by joining the [**Discord server**](#) and engaging with the community. Your insights and feedback are invaluable!
+Join the [**Discord server**](https://discord.gg/7vY9ZBPdya) to view real-time alerts, contribute to the project, and help shape its development. Your insights and feedback are invaluable!
 
 ---
 
