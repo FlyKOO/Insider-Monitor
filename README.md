@@ -9,6 +9,7 @@
         <a href="https://discord.gg/7vY9ZBPdya" style="display: inline-block; background-color: #7289DA; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none; font-weight: bold;">
             👉 Join The Discord Community
         </a>
+        <br>
         </br>
     </div>
     <p style="text-align: center; margin-top: 15px; font-style: italic;">⚠️ This tool is experimental. Alerts are for informational purposes and may not always indicate actionable insights. Use with caution.</p>
