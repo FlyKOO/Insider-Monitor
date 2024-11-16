@@ -233,22 +233,15 @@ func (w *WalletMonitor) ScanAllWallets() (map[string]*WalletData, error) {
     return results, nil
 }
 
-func DetectChanges(old, new map[string]*WalletData, significantChange float64) []Change {
+func DetectChanges(oldData, newData map[string]*WalletData, significantChange float64) []Change {
     var changes []Change
     
-    // Track new wallets and their token balances
-    newWallets := make(map[string]map[string]uint64)
-    
-    // Check each wallet in the new data
-    for walletAddr, newData := range new {
-        oldData, existed := old[walletAddr]
+    // Check for changes in existing wallets
+    for walletAddr, newData := range newData {
+        oldData, existed := oldData[walletAddr]
         
+        // Skip new wallet detection
         if !existed {
-            // New wallet detected - collect all tokens
-            newWallets[walletAddr] = make(map[string]uint64)
-            for mint, info := range newData.TokenAccounts {
-                newWallets[walletAddr][mint] = info.Balance
-            }
             continue
         }
         
@@ -267,11 +260,10 @@ func DetectChanges(old, new map[string]*WalletData, significantChange float64) [
                 continue
             }
             
-            // Check for significant balance changes only
+            // Check for significant balance changes
             pctChange := calculatePercentageChange(oldInfo.Balance, newInfo.Balance)
             absChange := abs(pctChange)
             
-            // Only report changes that meet the minimum threshold
             if absChange >= significantChange {
                 changes = append(changes, Change{
                     WalletAddress:  walletAddr,
@@ -285,15 +277,6 @@ func DetectChanges(old, new map[string]*WalletData, significantChange float64) [
                 })
             }
         }
-    }
-    
-    // Add consolidated new wallet alerts
-    for walletAddr, tokenBalances := range newWallets {
-        changes = append(changes, Change{
-            WalletAddress:  walletAddr,
-            ChangeType:     "new_wallet",
-            TokenBalances:  tokenBalances,
-        })
     }
     
     return changes

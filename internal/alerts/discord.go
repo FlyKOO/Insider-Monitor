@@ -61,7 +61,6 @@ func (d *DiscordAlerter) SendAlert(alert Alert) error {
         return alert.Data[key]
     }
 
-    // Format the description based on alert type
     var description string
     var fields []field
 
@@ -110,24 +109,6 @@ func (d *DiscordAlerter) SendAlert(alert Alert) error {
                 })
             }
         }
-
-    case "new_wallet":
-        var tokenList strings.Builder
-        tokenList.WriteString("```ini\n[Initial Token Balances]\n")
-        if balances, ok := safeGet("token_balances").(map[string]uint64); ok {
-            if decimals, ok := safeGet("token_decimals").(map[string]uint8); ok {
-                for symbol, balance := range balances {
-                    dec := decimals[symbol]
-                    formatted := utils.FormatTokenAmount(balance, dec)
-                    tokenList.WriteString(fmt.Sprintf("%s\n`%s`: %s\n", 
-                        symbol,
-                        symbol, // full mint address
-                        formatted))
-                }
-            }
-        }
-        tokenList.WriteString("```")
-        description = tokenList.String()
     }
 
     // If we failed to generate a description, use a fallback
