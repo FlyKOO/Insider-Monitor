@@ -266,7 +266,10 @@ func DetectChanges(old, new map[string]*WalletData, significantChange float64) [
             
             // Check for significant balance changes only
             pctChange := calculatePercentageChange(oldInfo.Balance, newInfo.Balance)
-            if abs(pctChange) >= significantChange {
+            absChange := abs(pctChange)
+            
+            // Only report changes that meet the minimum threshold
+            if absChange >= significantChange {
                 changes = append(changes, Change{
                     WalletAddress:  walletAddr,
                     TokenMint:      mint,

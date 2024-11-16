@@ -194,7 +194,7 @@ func processChanges(changes []monitor.Change, alerter alerts.Alerter, alertCfg c
 				change.WalletAddress,
 				len(change.TokenBalances),
 				strings.Join(tokenDetails, "\n"))
-			level = alerts.Info
+			level = alerts.Warning
 
 		case "new_token":
 			msg = fmt.Sprintf("New token detected in %s: %s with balance %d",
@@ -206,31 +206,36 @@ func processChanges(changes []monitor.Change, alerter alerts.Alerter, alertCfg c
 				change.WalletAddress, change.TokenMint, 
 				change.OldBalance, change.NewBalance, change.ChangePercent)
 			
-			// Use config values for thresholds
+			absChange := abs(change.ChangePercent)
+			// Adjust thresholds for more meaningful alerts
 			switch {
-			case abs(change.ChangePercent) >= (alertCfg.SignificantChange * 4): // 4x significant change for critical
+			case absChange >= (alertCfg.SignificantChange * 5):  // Very large changes (e.g., 50% if base is 10%)
 				level = alerts.Critical
-			case abs(change.ChangePercent) >= alertCfg.SignificantChange:
+			case absChange >= (alertCfg.SignificantChange * 2):  // Significant changes (e.g., 20% if base is 10%)
 				level = alerts.Warning
-			default:
+			default:  // Changes that meet the minimum threshold but aren't dramatic
 				level = alerts.Info
 			}
 		}
 
-		if msg != "" {
+		// Only send alerts for Warning and Critical levels
+		if level >= alerts.Warning {
 			alert := alerts.Alert{
 				Timestamp:     time.Now(),
 				WalletAddress: change.WalletAddress,
 				TokenMint:     change.TokenMint,
-				AlertType:     change.ChangeType,
-				Message:       msg,
-				Level:        level,
+					AlertType:     change.ChangeType,
+					Message:       msg,
+					Level:        level,
 			}
 
 			if err := alerter.SendAlert(alert); err != nil {
 				log.Printf("failed to send alert: %v", err)
 			}
 			monitor.LogToFile("./data", msg)
+		} else {
+			// Just log info-level changes without alerting
+			monitor.LogToFile("./data", fmt.Sprintf("INFO: %s", msg))
 		}
 	}
 }
