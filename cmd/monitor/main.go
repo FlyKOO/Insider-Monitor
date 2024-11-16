@@ -206,8 +206,8 @@ func processChanges(changes []monitor.Change, alerter alerts.Alerter, alertCfg c
 			}
 
 		case "new_token":
-			msg = fmt.Sprintf("New token detected in %s: %s with balance %d",
-				change.WalletAddress, change.TokenMint, change.NewBalance)
+			msg = fmt.Sprintf("New token %s (%s) detected in wallet with initial balance %d",
+				change.TokenSymbol, change.TokenMint, change.NewBalance)
 			level = alerts.Warning
 			alertData = map[string]interface{}{
 				"balance":  change.NewBalance,
@@ -216,8 +216,8 @@ func processChanges(changes []monitor.Change, alerter alerts.Alerter, alertCfg c
 			}
 
 		case "balance_change":
-			msg = fmt.Sprintf("Balance change in %s: Token %s from %d to %d (%.2f%%)",
-				change.WalletAddress, change.TokenMint, 
+			msg = fmt.Sprintf("Balance change for %s (%s): from %d to %d (%.2f%%)",
+				change.TokenSymbol, change.TokenMint,
 				change.OldBalance, change.NewBalance, change.ChangePercent)
 			
 			absChange := abs(change.ChangePercent)

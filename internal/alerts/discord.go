@@ -63,6 +63,8 @@ func (d *DiscordAlerter) SendAlert(alert Alert) error {
 
     // Format the description based on alert type
     var description string
+    var fields []field
+
     switch alert.AlertType {
     case "balance_change":
         if oldBal, ok := safeGet("old_balance").(uint64); ok {
@@ -73,11 +75,19 @@ func (d *DiscordAlerter) SendAlert(alert Alert) error {
                     symbol := safeGet("symbol").(string)
                     changePercent := safeGet("change_percent").(float64)
                     
-                    description = fmt.Sprintf("```diff\n%s\n- Old: %s\n+ New: %s\nChange: %+.2f%%```",
-                        symbol,
+                    description = fmt.Sprintf("```diff\n- Old: %s\n+ New: %s\nChange: %+.2f%%```",
                         oldFormatted,
                         newFormatted,
                         changePercent)
+
+                    // Add detailed token information as a field
+                    fields = append(fields, field{
+                        Name: "Token",
+                        Value: fmt.Sprintf("%s\n`%s`", 
+                            symbol,
+                            alert.TokenMint),
+                        Inline: false,
+                    })
                 }
             }
         }
@@ -87,9 +97,17 @@ func (d *DiscordAlerter) SendAlert(alert Alert) error {
             if decimals, ok := safeGet("decimals").(uint8); ok {
                 formatted := utils.FormatTokenAmount(balance, decimals)
                 symbol := safeGet("symbol").(string)
-                description = fmt.Sprintf("```ini\n[New Token Added]\nToken: %s\nInitial Balance: %s```",
-                    symbol,
+                description = fmt.Sprintf("```ini\n[Initial Balance]\n%s```",
                     formatted)
+
+                // Add detailed token information as a field
+                fields = append(fields, field{
+                    Name: "Token",
+                    Value: fmt.Sprintf("%s\n`%s`", 
+                        symbol,
+                        alert.TokenMint),
+                    Inline: false,
+                })
             }
         }
 
@@ -101,7 +119,10 @@ func (d *DiscordAlerter) SendAlert(alert Alert) error {
                 for symbol, balance := range balances {
                     dec := decimals[symbol]
                     formatted := utils.FormatTokenAmount(balance, dec)
-                    tokenList.WriteString(fmt.Sprintf("%s: %s\n", symbol, formatted))
+                    tokenList.WriteString(fmt.Sprintf("%s\n`%s`: %s\n", 
+                        symbol,
+                        symbol, // full mint address
+                        formatted))
                 }
             }
         }
@@ -114,16 +135,27 @@ func (d *DiscordAlerter) SendAlert(alert Alert) error {
         description = fmt.Sprintf("```%s```", alert.Message)
     }
 
+    // Add wallet address as a field
+    fields = append(fields, field{
+        Name: "Wallet",
+        Value: fmt.Sprintf("`%s`", alert.WalletAddress),
+        Inline: false,
+    })
+
+    // Add timestamp
+    fields = append(fields, field{
+        Name: "Time",
+        Value: alert.Timestamp.Format("2006-01-02 15:04:05 MST"),
+        Inline: true,
+    })
+
     msg := discordMessage{
         Username: "Solana Wallet Monitor",
         Embeds: []embed{{
             Title:       fmt.Sprintf("%s Alert", strings.ToUpper(alert.AlertType)),
             Description: description,
             Color:      color,
-            Fields: []field{
-                {Name: "Wallet", Value: fmt.Sprintf("`%s`", alert.WalletAddress), Inline: true},
-                {Name: "Time", Value: alert.Timestamp.Format("2006-01-02 15:04:05 MST"), Inline: true},
-            },
+            Fields:     fields,
         }},
     }
 
