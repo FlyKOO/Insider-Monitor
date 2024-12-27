@@ -2,6 +2,17 @@
 
 A powerful tool for monitoring Solana wallet activities, detecting balance changes, and receiving real-time alerts.
 
+## Community
+
+Join our Discord community to:
+- Get help with setup and configuration
+- Share feedback and suggestions
+- Connect with other users
+- Stay updated on new features and releases
+- Discuss Solana development
+
+👉 [Join the Discord Server](https://discord.gg/7vY9ZBPdya)
+
 ## Features
 
 - 🔍 Monitor multiple Solana wallets simultaneously
