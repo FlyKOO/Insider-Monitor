@@ -1,6 +1,6 @@
 # Solana Insider Monitor
 
-A powerful tool for monitoring Solana wallet activities, detecting balance changes, and receiving real-time alerts.
+A tool for monitoring Solana wallet activities, detecting balance changes, and receiving real-time alerts.
 
 ## Community
 
