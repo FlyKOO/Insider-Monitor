@@ -1,9 +1,5 @@
-# Binary output
-solana-monitor
+# Binaries and build output
 /bin/
-/dist/
-
-# Binaries for programs and plugins
 *.exe
 *.exe~
 *.dll
@@ -15,52 +11,21 @@ solana-monitor
 
 # Output of the go coverage tool
 *.out
-*.cov
-coverage.html
-coverage.txt
 
 # Dependency directories
 vendor/
 
-# Go workspace file
-go.work
-go.work.sum
-
-# Environment files
-.env
-.env.*
-!.env.example
-
-# Data and Config files
-/data/
-*.log
-config.json
-*.json
-!example-config.json
-
 # IDE specific files
-.vscode/
 .idea/
+.vscode/
 *.swp
 *.swo
-.DS_Store
 
-# Debug files
-__debug_bin
-debug.test
+# Application specific
+/data/
+config.json
+*.log
 
-# Temporary files
-*.tmp
-*.temp
-*~
-
-# System files
+# OS specific
 .DS_Store
 Thumbs.db
-
-# Pre-commit hook installation
-.pre-commit-config.yaml.cache
-
-# Backup files
-/tmp/solana-monitor-backup/
-*.backup

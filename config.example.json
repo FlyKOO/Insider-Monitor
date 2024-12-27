@@ -1,0 +1,18 @@
+{
+    "network_url": "https://api.mainnet-beta.solana.com",
+    "wallets": [
+        "55kBY9yxqQzj2zxZqRkqENYq6R8PkXmn5GKyQN9YeVFr",
+        "DWuopnuSqYdBhCXqxfqjqzPGibnhkj6SQqFvgC4jkvjF"
+    ],
+    "scan_interval": "1m",
+    "alerts": {
+        "minimum_balance": 1000,
+        "significant_change": 0.20,
+        "ignore_tokens": []
+    },
+    "discord": {
+        "enabled": false,
+        "webhook_url": "",
+        "channel_id": ""
+    }
+} 
