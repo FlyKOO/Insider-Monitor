@@ -16,12 +16,19 @@ type Config struct {
 	ScanInterval string        `json:"scan_interval"`
 	Alerts       AlertConfig   `json:"alerts"`
 	Discord      DiscordConfig `json:"discord"`
+	Scan         ScanConfig    `json:"scan"`
 }
 
 type AlertConfig struct {
 	MinimumBalance    uint64   `json:"minimum_balance"`    // Minimum balance to trigger alerts
 	SignificantChange float64  `json:"significant_change"` // e.g., 0.20 for 20% change
 	IgnoreTokens      []string `json:"ignore_tokens"`      // Tokens to ignore
+}
+
+type ScanConfig struct {
+	IncludeTokens []string `json:"include_tokens"` // Specific tokens to include (if empty, include all)
+	ExcludeTokens []string `json:"exclude_tokens"` // Specific tokens to exclude
+	ScanMode      string   `json:"scan_mode"`      // "all", "whitelist", or "blacklist"
 }
 
 type DiscordConfig struct {

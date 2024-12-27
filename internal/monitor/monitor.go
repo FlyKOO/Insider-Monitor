@@ -8,12 +8,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/accursedgalaxy/insider-monitor/internal/config"
 	bin "github.com/gagliardetto/binary"
-
 	"github.com/gagliardetto/solana-go"
 	"github.com/gagliardetto/solana-go/programs/token"
 	"github.com/gagliardetto/solana-go/rpc"
-	"golang.org/x/time/rate"
 )
 
 type WalletMonitor struct {
@@ -21,12 +20,13 @@ type WalletMonitor struct {
 	wallets     []solana.PublicKey
 	networkURL  string
 	isConnected bool
+	scanConfig  *config.ScanConfig
 }
 
-func NewWalletMonitor(networkURL string, wallets []string) (*WalletMonitor, error) {
+func NewWalletMonitor(networkURL string, wallets []string, scanConfig *config.ScanConfig) (*WalletMonitor, error) {
 	client := rpc.NewWithCustomRPCClient(rpc.NewWithLimiter(
 		networkURL,
-		rate.Every(time.Second/4),
+		4,
 		1,
 	))
 
@@ -44,6 +44,7 @@ func NewWalletMonitor(networkURL string, wallets []string) (*WalletMonitor, erro
 		client:     client,
 		wallets:    pubKeys,
 		networkURL: networkURL,
+		scanConfig: scanConfig,
 	}, nil
 }
 
@@ -110,6 +111,36 @@ func (w *WalletMonitor) getTokenAccountsWithRetry(wallet solana.PublicKey) (*rpc
 	return nil, fmt.Errorf("failed after %d retries: %w", maxRetries, lastErr)
 }
 
+// shouldIncludeToken determines if a token should be included based on scan configuration
+func (w *WalletMonitor) shouldIncludeToken(mint string) bool {
+	if w.scanConfig == nil {
+		return true // If no scan config, include everything
+	}
+
+	switch w.scanConfig.ScanMode {
+	case "whitelist":
+		// Only include tokens in the IncludeTokens list
+		for _, token := range w.scanConfig.IncludeTokens {
+			if strings.EqualFold(token, mint) {
+				return true
+			}
+		}
+		return false
+
+	case "blacklist":
+		// Include all tokens except those in ExcludeTokens list
+		for _, token := range w.scanConfig.ExcludeTokens {
+			if strings.EqualFold(token, mint) {
+				return false
+			}
+		}
+		return true
+
+	default: // "all" or any other value
+		return true
+	}
+}
+
 func (w *WalletMonitor) GetWalletData(wallet solana.PublicKey) (*WalletData, error) {
 	walletData := &WalletData{
 		WalletAddress: wallet.String(),
@@ -132,19 +163,21 @@ func (w *WalletMonitor) GetWalletData(wallet solana.PublicKey) (*WalletData, err
 			continue
 		}
 
-		// Only include accounts with positive balance
+		// Only include accounts with positive balance and that pass the filter
 		if tokenAccount.Amount > 0 {
 			mint := tokenAccount.Mint.String()
-			walletData.TokenAccounts[mint] = TokenAccountInfo{
-				Balance:     tokenAccount.Amount,
-				LastUpdated: time.Now(),
-				Symbol:      mint[:8] + "...",
-				Decimals:    9,
+			if w.shouldIncludeToken(mint) {
+				walletData.TokenAccounts[mint] = TokenAccountInfo{
+					Balance:     tokenAccount.Amount,
+					LastUpdated: time.Now(),
+					Symbol:      mint[:8] + "...",
+					Decimals:    9,
+				}
 			}
 		}
 	}
 
-	log.Printf("Wallet %s: found %d token accounts", wallet.String(), len(walletData.TokenAccounts))
+	log.Printf("Wallet %s: found %d token accounts (after filtering)", wallet.String(), len(walletData.TokenAccounts))
 	return walletData, nil
 }
 

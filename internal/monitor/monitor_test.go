@@ -34,7 +34,7 @@ func TestNewWalletMonitor(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			monitor, err := NewWalletMonitor(tt.networkURL, tt.wallets)
+			monitor, err := NewWalletMonitor(tt.networkURL, tt.wallets, nil)
 			if tt.shouldError {
 				assert.Error(t, err)
 				assert.Nil(t, monitor)
@@ -153,6 +153,47 @@ func TestAbs(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := abs(tt.input)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestFormatTokenAmount(t *testing.T) {
+	tests := []struct {
+		name     string
+		amount   uint64
+		decimals uint8
+		expected string
+	}{
+		{
+			name:     "No decimals",
+			amount:   1000,
+			decimals: 0,
+			expected: "1000",
+		},
+		{
+			name:     "With decimals",
+			amount:   1000000000,
+			decimals: 9,
+			expected: "1.0000",
+		},
+		{
+			name:     "Millions",
+			amount:   5000000000000,
+			decimals: 9,
+			expected: "5.00M",
+		},
+		{
+			name:     "Thousands",
+			amount:   5000000000,
+			decimals: 9,
+			expected: "5.00K",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := formatTokenAmount(tt.amount, tt.decimals)
 			assert.Equal(t, tt.expected, result)
 		})
 	}

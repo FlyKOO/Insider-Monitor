@@ -6,7 +6,7 @@ require (
 	github.com/gagliardetto/binary v0.8.0
 	github.com/gagliardetto/solana-go v1.12.0
 	github.com/stretchr/testify v1.10.0
-	golang.org/x/time v0.8.0
+	golang.org/x/time v0.8.0 // indirect
 )
 
 require (

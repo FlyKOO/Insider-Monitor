@@ -49,7 +49,7 @@ func main() {
 	if *testMode {
 		scanner = monitor.NewMockWalletMonitor()
 	} else {
-		scanner, err = monitor.NewWalletMonitor(cfg.NetworkURL, cfg.Wallets)
+		scanner, err = monitor.NewWalletMonitor(cfg.NetworkURL, cfg.Wallets, &cfg.Scan)
 		if err != nil {
 			log.Fatalf("failed to create wallet monitor: %v", err)
 		}

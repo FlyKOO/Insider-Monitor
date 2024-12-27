@@ -14,5 +14,13 @@
         "enabled": false,
         "webhook_url": "",
         "channel_id": ""
+    },
+    "scan": {
+        "scan_mode": "all",
+        "include_tokens": [
+            "TokenAddressHere",
+            "AnotherTokenAddress"
+        ],
+        "exclude_tokens": []
     }
 } 
