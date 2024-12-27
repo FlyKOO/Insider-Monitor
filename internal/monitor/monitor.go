@@ -327,17 +327,15 @@ func formatTokenAmount(amount uint64, decimals uint8) string {
 	divisor := math.Pow(10, float64(decimals))
 	value := float64(amount) / divisor
 
-	// Format with appropriate decimal places
-	if value >= 1000000 {
-		// Use millions format: 1.23M
-		return fmt.Sprintf("%.2fM", value/1000000)
-	} else if value >= 1000 {
-		// Use thousands format: 1.23K
-		return fmt.Sprintf("%.2fK", value/1000)
+	// Format with appropriate decimal places based on size
+	switch {
+	case value >= 5000:
+		return fmt.Sprintf("%.2fM", value/1000)
+	case value >= 5:
+		return fmt.Sprintf("%.2fK", value)
+	default:
+		return fmt.Sprintf("%.4f", value)
 	}
-
-	// Use standard format with max 4 decimal places
-	return fmt.Sprintf("%.4f", value)
 }
 
 // FormatWalletOverview returns a compact string representation of wallet holdings
