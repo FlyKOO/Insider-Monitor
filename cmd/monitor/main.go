@@ -49,7 +49,7 @@ func main() {
 	if *testMode {
 		scanner = monitor.NewMockWalletMonitor()
 	} else {
-		scanner, err = monitor.NewWalletMonitor(cfg.NetworkURL, cfg.Wallets)
+		scanner, err = monitor.NewWalletMonitor(cfg.NetworkURL, cfg.Wallets, &cfg.Scan)
 		if err != nil {
 			log.Fatalf("failed to create wallet monitor: %v", err)
 		}
@@ -111,6 +111,7 @@ func runMonitor(scanner WalletScanner, alerter alerts.Alerter, cfg *config.Confi
 		}
 		lastSuccessfulScan = time.Now()
 		log.Printf("Initial scan complete. Found data for %d wallets", len(initialResults))
+		fmt.Print(monitor.FormatWalletOverview(initialResults))
 	}
 
 	// Start monitoring in a separate goroutine
@@ -168,6 +169,9 @@ func runMonitor(scanner WalletScanner, alerter alerts.Alerter, cfg *config.Confi
 					log.Printf("Error saving data: %v", err)
 				}
 				previousData = newResults
+
+				// Display wallet overview
+				fmt.Print(monitor.FormatWalletOverview(newResults))
 
 			case <-done:
 				log.Println("Monitoring loop stopped")

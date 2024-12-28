@@ -5,15 +5,15 @@ import (
 	"fmt"
 	"log"
 	"math"
+	"sort"
 	"strings"
 	"time"
 
+	"github.com/accursedgalaxy/insider-monitor/internal/config"
 	bin "github.com/gagliardetto/binary"
-
 	"github.com/gagliardetto/solana-go"
 	"github.com/gagliardetto/solana-go/programs/token"
 	"github.com/gagliardetto/solana-go/rpc"
-	"golang.org/x/time/rate"
 )
 
 type WalletMonitor struct {
@@ -21,12 +21,13 @@ type WalletMonitor struct {
 	wallets     []solana.PublicKey
 	networkURL  string
 	isConnected bool
+	scanConfig  *config.ScanConfig
 }
 
-func NewWalletMonitor(networkURL string, wallets []string) (*WalletMonitor, error) {
+func NewWalletMonitor(networkURL string, wallets []string, scanConfig *config.ScanConfig) (*WalletMonitor, error) {
 	client := rpc.NewWithCustomRPCClient(rpc.NewWithLimiter(
 		networkURL,
-		rate.Every(time.Second/4),
+		4,
 		1,
 	))
 
@@ -44,6 +45,7 @@ func NewWalletMonitor(networkURL string, wallets []string) (*WalletMonitor, erro
 		client:     client,
 		wallets:    pubKeys,
 		networkURL: networkURL,
+		scanConfig: scanConfig,
 	}, nil
 }
 
@@ -110,6 +112,36 @@ func (w *WalletMonitor) getTokenAccountsWithRetry(wallet solana.PublicKey) (*rpc
 	return nil, fmt.Errorf("failed after %d retries: %w", maxRetries, lastErr)
 }
 
+// shouldIncludeToken determines if a token should be included based on scan configuration
+func (w *WalletMonitor) shouldIncludeToken(mint string) bool {
+	if w.scanConfig == nil {
+		return true // If no scan config, include everything
+	}
+
+	switch w.scanConfig.ScanMode {
+	case "whitelist":
+		// Only include tokens in the IncludeTokens list
+		for _, token := range w.scanConfig.IncludeTokens {
+			if strings.EqualFold(token, mint) {
+				return true
+			}
+		}
+		return false
+
+	case "blacklist":
+		// Include all tokens except those in ExcludeTokens list
+		for _, token := range w.scanConfig.ExcludeTokens {
+			if strings.EqualFold(token, mint) {
+				return false
+			}
+		}
+		return true
+
+	default: // "all" or any other value
+		return true
+	}
+}
+
 func (w *WalletMonitor) GetWalletData(wallet solana.PublicKey) (*WalletData, error) {
 	walletData := &WalletData{
 		WalletAddress: wallet.String(),
@@ -132,19 +164,21 @@ func (w *WalletMonitor) GetWalletData(wallet solana.PublicKey) (*WalletData, err
 			continue
 		}
 
-		// Only include accounts with positive balance
+		// Only include accounts with positive balance and that pass the filter
 		if tokenAccount.Amount > 0 {
 			mint := tokenAccount.Mint.String()
-			walletData.TokenAccounts[mint] = TokenAccountInfo{
-				Balance:     tokenAccount.Amount,
-				LastUpdated: time.Now(),
-				Symbol:      mint[:8] + "...",
-				Decimals:    9,
+			if w.shouldIncludeToken(mint) {
+				walletData.TokenAccounts[mint] = TokenAccountInfo{
+					Balance:     tokenAccount.Amount,
+					LastUpdated: time.Now(),
+					Symbol:      mint[:8] + "...",
+					Decimals:    9,
+				}
 			}
 		}
 	}
 
-	log.Printf("Wallet %s: found %d token accounts", wallet.String(), len(walletData.TokenAccounts))
+	log.Printf("Wallet %s: found %d token accounts (after filtering)", wallet.String(), len(walletData.TokenAccounts))
 	return walletData, nil
 }
 
@@ -293,15 +327,66 @@ func formatTokenAmount(amount uint64, decimals uint8) string {
 	divisor := math.Pow(10, float64(decimals))
 	value := float64(amount) / divisor
 
-	// Format with appropriate decimal places
-	if value >= 1000000 {
-		// Use millions format: 1.23M
-		return fmt.Sprintf("%.2fM", value/1000000)
-	} else if value >= 1000 {
-		// Use thousands format: 1.23K
-		return fmt.Sprintf("%.2fK", value/1000)
+	// Format with appropriate decimal places based on size
+	switch {
+	case value >= 5000:
+		return fmt.Sprintf("%.2fM", value/1000)
+	case value >= 5:
+		return fmt.Sprintf("%.2fK", value)
+	default:
+		return fmt.Sprintf("%.4f", value)
 	}
+}
 
-	// Use standard format with max 4 decimal places
-	return fmt.Sprintf("%.4f", value)
+// FormatWalletOverview returns a compact string representation of wallet holdings
+func FormatWalletOverview(data map[string]*WalletData) string {
+	var overview strings.Builder
+	overview.WriteString("\nWallet Holdings Overview:\n")
+	overview.WriteString("------------------------\n")
+
+	for _, wallet := range data {
+		overview.WriteString(fmt.Sprintf("📍 %s\n", wallet.WalletAddress))
+		if len(wallet.TokenAccounts) == 0 {
+			overview.WriteString("   No tokens found\n")
+			continue
+		}
+
+		// Convert map to slice for sorting
+		type tokenHolding struct {
+			symbol   string
+			balance  uint64
+			decimals uint8
+		}
+		holdings := make([]tokenHolding, 0, len(wallet.TokenAccounts))
+		for _, info := range wallet.TokenAccounts {
+			holdings = append(holdings, tokenHolding{
+				symbol:   info.Symbol,
+				balance:  info.Balance,
+				decimals: info.Decimals,
+			})
+		}
+
+		// Sort by balance (highest first)
+		sort.Slice(holdings, func(i, j int) bool {
+			return holdings[i].balance > holdings[j].balance
+		})
+
+		// Show top 5 holdings
+		maxDisplay := 5
+		if len(holdings) < maxDisplay {
+			maxDisplay = len(holdings)
+		}
+		for i := 0; i < maxDisplay; i++ {
+			balance := formatTokenAmount(holdings[i].balance, holdings[i].decimals)
+			overview.WriteString(fmt.Sprintf("   • %s: %s\n", holdings[i].symbol, balance))
+		}
+
+		// Show how many more tokens if any
+		remaining := len(holdings) - maxDisplay
+		if remaining > 0 {
+			overview.WriteString(fmt.Sprintf("   ... and %d more tokens\n", remaining))
+		}
+		overview.WriteString("\n")
+	}
+	return overview.String()
 }
