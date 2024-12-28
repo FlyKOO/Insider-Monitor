@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/accursedgalaxy/insider-monitor/internal/config"
+	"github.com/accursedgalaxy/insider-monitor/internal/price"
 	bin "github.com/gagliardetto/binary"
 	"github.com/gagliardetto/solana-go"
 	"github.com/gagliardetto/solana-go/programs/token"
@@ -17,11 +18,12 @@ import (
 )
 
 type WalletMonitor struct {
-	client      *rpc.Client
-	wallets     []solana.PublicKey
-	networkURL  string
-	isConnected bool
-	scanConfig  *config.ScanConfig
+	client       *rpc.Client
+	wallets      []solana.PublicKey
+	networkURL   string
+	isConnected  bool
+	scanConfig   *config.ScanConfig
+	priceService *price.JupiterPrice
 }
 
 func NewWalletMonitor(networkURL string, wallets []string, scanConfig *config.ScanConfig) (*WalletMonitor, error) {
@@ -42,19 +44,23 @@ func NewWalletMonitor(networkURL string, wallets []string, scanConfig *config.Sc
 	}
 
 	return &WalletMonitor{
-		client:     client,
-		wallets:    pubKeys,
-		networkURL: networkURL,
-		scanConfig: scanConfig,
+		client:       client,
+		wallets:      pubKeys,
+		networkURL:   networkURL,
+		scanConfig:   scanConfig,
+		priceService: price.NewJupiterPrice(),
 	}, nil
 }
 
 // Simplified TokenAccountInfo
 type TokenAccountInfo struct {
-	Balance     uint64    `json:"balance"`
-	LastUpdated time.Time `json:"last_updated"`
-	Symbol      string    `json:"symbol"`
-	Decimals    uint8     `json:"decimals"`
+	Balance         uint64    `json:"balance"`
+	LastUpdated     time.Time `json:"last_updated"`
+	Symbol          string    `json:"symbol"`
+	Decimals        uint8     `json:"decimals"`
+	USDPrice        float64   `json:"usd_price"`
+	USDValue        float64   `json:"usd_value"`
+	ConfidenceLevel string    `json:"confidence_level"`
 }
 
 // Simplified WalletData
@@ -389,4 +395,110 @@ func FormatWalletOverview(data map[string]*WalletData) string {
 		overview.WriteString("\n")
 	}
 	return overview.String()
+}
+
+// Update FormatWalletOverview to include confidence indicators
+func formatTokenValue(value float64, confidence string) string {
+	var indicator string
+	switch strings.ToLower(confidence) {
+	case "high":
+		indicator = "✅"
+	case "medium":
+		indicator = "⚠️"
+	default:
+		indicator = "❓"
+	}
+
+	if value >= 1000000 {
+		return fmt.Sprintf(" ($%.2fM) %s", value/1000000, indicator)
+	} else if value >= 1000 {
+		return fmt.Sprintf(" ($%.2fK) %s", value/1000, indicator)
+	}
+	return fmt.Sprintf(" ($%.2f) %s", value, indicator)
+}
+
+// Add a struct to hold token data with USD value
+type tokenHolding struct {
+	Mint     string
+	Amount   float64
+	USDValue float64
+	Symbol   string
+}
+
+func (m *WalletMonitor) DisplayWalletOverview(walletDataMap map[string]*WalletData) {
+	fmt.Println("\nWallet Holdings Overview:")
+	fmt.Println("------------------------")
+
+	// Collect all unique mints
+	mints := make([]string, 0)
+	for _, walletData := range walletDataMap {
+		for mint := range walletData.TokenAccounts {
+			mints = append(mints, mint)
+		}
+	}
+
+	// Update prices for all tokens
+	if err := m.priceService.UpdatePrices(mints); err != nil {
+		log.Printf("Error updating prices: %v", err)
+	}
+
+	for _, wallet := range m.wallets {
+		fmt.Printf("📍 %s\n", wallet.String())
+		walletData, exists := walletDataMap[wallet.String()]
+		if !exists {
+			continue
+		}
+
+		// Convert token holdings to slice for sorting
+		holdings := make([]tokenHolding, 0)
+
+		for mint, info := range walletData.TokenAccounts {
+			// Get price data from Jupiter
+			priceData, exists := m.priceService.GetPrice(mint)
+
+			usdValue := 0.0
+			if exists {
+				// Convert balance to float considering decimals
+				actualAmount := float64(info.Balance) / math.Pow(10, float64(info.Decimals))
+				usdValue = actualAmount * priceData.Price
+			}
+
+			holdings = append(holdings, tokenHolding{
+				Mint:     mint,
+				Amount:   float64(info.Balance),
+				USDValue: usdValue,
+			})
+		}
+
+		// Sort by USD value descending
+		sort.Slice(holdings, func(i, j int) bool {
+			return holdings[i].USDValue > holdings[j].USDValue
+		})
+
+		// Display top 5 holdings
+		for i := 0; i < min(5, len(holdings)); i++ {
+			holding := holdings[i]
+			shortMint := holding.Mint[:8] + "..."
+
+			if holding.USDValue > 0 {
+				actualAmount := holding.Amount / math.Pow(10, float64(9)) // assuming 9 decimals for now
+				fmt.Printf("   • %s: %.2fM ($%.2f)\n", shortMint, actualAmount, holding.USDValue)
+			} else {
+				actualAmount := holding.Amount / math.Pow(10, float64(9))
+				fmt.Printf("   • %s: %.2fM\n", shortMint, actualAmount)
+			}
+		}
+
+		if len(holdings) > 5 {
+			fmt.Printf("   ... and %d more tokens\n\n", len(holdings)-5)
+		}
+	}
+}
+
+// Helper function for min
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }
