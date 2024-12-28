@@ -111,7 +111,7 @@ func runMonitor(scanner WalletScanner, alerter alerts.Alerter, cfg *config.Confi
 		}
 		lastSuccessfulScan = time.Now()
 		log.Printf("Initial scan complete. Found data for %d wallets", len(initialResults))
-		fmt.Print(monitor.FormatWalletOverview(initialResults))
+		scanner.(*monitor.WalletMonitor).DisplayWalletOverview(initialResults)
 	}
 
 	// Start monitoring in a separate goroutine
@@ -171,7 +171,7 @@ func runMonitor(scanner WalletScanner, alerter alerts.Alerter, cfg *config.Confi
 				previousData = newResults
 
 				// Display wallet overview
-				fmt.Print(monitor.FormatWalletOverview(newResults))
+				scanner.(*monitor.WalletMonitor).DisplayWalletOverview(newResults)
 
 			case <-done:
 				log.Println("Monitoring loop stopped")
