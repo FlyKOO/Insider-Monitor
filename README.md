@@ -85,6 +85,56 @@ cp config.example.json config.json
   - `enabled`: Set to true to enable Discord notifications
   - `webhook_url`: Discord webhook URL
   - `channel_id`: Discord channel ID
+- `scan`:
+  - `scan_mode`: Token scanning mode
+    - `"all"`: Monitor all tokens (default)
+    - `"whitelist"`: Only monitor tokens in `include_tokens`
+    - `"blacklist"`: Monitor all tokens except those in `exclude_tokens`
+  - `include_tokens`: Array of token addresses to specifically monitor (used with `whitelist` mode)
+  - `exclude_tokens`: Array of token addresses to ignore (used with `blacklist` mode)
+
+### Scan Mode Examples
+
+Here are examples of different scan configurations:
+
+1. Monitor all tokens:
+```json
+{
+    "scan": {
+        "scan_mode": "all",
+        "include_tokens": [],
+        "exclude_tokens": []
+    }
+}
+```
+
+2. Monitor only specific tokens (whitelist):
+```json
+{
+    "scan": {
+        "scan_mode": "whitelist",
+        "include_tokens": [
+            "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",  // USDC
+            "So11111111111111111111111111111111111111112"     // SOL
+        ],
+        "exclude_tokens": []
+    }
+}
+```
+
+3. Monitor all tokens except specific ones (blacklist):
+```json
+{
+    "scan": {
+        "scan_mode": "blacklist",
+        "include_tokens": [],
+        "exclude_tokens": [
+            "TokenAddressToIgnore1",
+            "TokenAddressToIgnore2"
+        ]
+    }
+}
+```
 
 ### Running the Monitor
 
