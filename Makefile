@@ -26,9 +26,6 @@ clean:
 run:
 	$(GOCMD) run cmd/monitor/main.go
 
-run-test:
-	$(GOCMD) run cmd/monitor/main.go -test
-
 test: 
 	$(GOTEST) -v ./...
 
@@ -48,7 +45,6 @@ help:
 	@echo "Available targets:"
 	@echo "  make build       - Build the binary"
 	@echo "  make run        - Run the application"
-	@echo "  make run-test   - Run in test mode"
 	@echo "  make test       - Run tests"
 	@echo "  make clean      - Clean build files"
 	@echo "  make setup      - Initial setup"

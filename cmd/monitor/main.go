@@ -19,13 +19,13 @@ import (
 // WalletScanner interface defines the contract for wallet monitoring
 type WalletScanner interface {
 	ScanAllWallets() (map[string]*monitor.WalletData, error)
+	DisplayWalletOverview(walletDataMap map[string]*monitor.WalletData)
 }
 
 func main() {
 	// Create our custom logger
 	logger := utils.NewLogger(false)
 
-	testMode := flag.Bool("test", false, "Run in test mode with accelerated scanning")
 	configPath := flag.String("config", "config.json", "Path to configuration file")
 	flag.Parse()
 
@@ -34,17 +34,9 @@ func main() {
 	fmt.Printf("%s━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━%s\n\n", utils.ColorPurple, utils.ColorReset)
 
 	// Load configuration
-	var cfg *config.Config
-	var err error
-
-	if *testMode {
-		cfg = config.GetTestConfig()
-		logger.Info("Running in test mode with 5-second scan interval")
-	} else {
-		cfg, err = config.LoadConfig(*configPath)
-		if err != nil {
-			logger.Fatal("Failed to load config: %v", err)
-		}
+	cfg, err := config.LoadConfig(*configPath)
+	if err != nil {
+		logger.Fatal("Failed to load config: %v", err)
 	}
 
 	if err := cfg.Validate(); err != nil {
@@ -52,14 +44,9 @@ func main() {
 	}
 
 	// Initialize scanner
-	var scanner WalletScanner
-	if *testMode {
-		scanner = monitor.NewMockWalletMonitor()
-	} else {
-		scanner, err = monitor.NewWalletMonitor(cfg.NetworkURL, cfg.Wallets, &cfg.Scan)
-		if err != nil {
-			logger.Fatal("Failed to create wallet monitor: %v", err)
-		}
+	scanner, err := monitor.NewWalletMonitor(cfg.NetworkURL, cfg.Wallets, &cfg.Scan)
+	if err != nil {
+		logger.Fatal("Failed to create wallet monitor: %v", err)
 	}
 
 	// Initialize alerter
@@ -118,7 +105,7 @@ func runMonitor(scanner WalletScanner, alerter alerts.Alerter, cfg *config.Confi
 		}
 		lastSuccessfulScan = time.Now()
 		logger.Success("Initial scan complete. Found data for %d wallets", len(initialResults))
-		scanner.(*monitor.WalletMonitor).DisplayWalletOverview(initialResults)
+		scanner.DisplayWalletOverview(initialResults)
 	}
 
 	// Start monitoring in a separate goroutine
@@ -178,7 +165,7 @@ func runMonitor(scanner WalletScanner, alerter alerts.Alerter, cfg *config.Confi
 				previousData = newResults
 
 				// Display wallet overview
-				scanner.(*monitor.WalletMonitor).DisplayWalletOverview(newResults)
+				scanner.DisplayWalletOverview(newResults)
 
 			case <-done:
 				logger.Info("Monitoring loop stopped")

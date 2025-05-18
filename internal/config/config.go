@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-
-	"github.com/gagliardetto/solana-go/rpc"
 )
 
 type Config struct {
@@ -45,30 +43,6 @@ func (c *Config) Validate() error {
 		return errors.New("at least one wallet address is required")
 	}
 	return nil
-}
-
-var TestWallets = []string{
-	"55kBY9yxqQzj2zxZqRkqENYq6R8PkXmn5GKyQN9YeVFr", // Known test wallet
-	"DWuopnuSqYdBhCXqxfqjqzPGibnhkj6SQqFvgC4jkvjF", // Another test wallet
-}
-
-// Test configuration
-func GetTestConfig() *Config {
-	return &Config{
-		NetworkURL:   rpc.DevNet_RPC,
-		Wallets:      TestWallets,
-		ScanInterval: "5s",
-		Alerts: AlertConfig{
-			MinimumBalance:    1000,
-			SignificantChange: 0.05,
-			IgnoreTokens:      []string{},
-		},
-		Discord: DiscordConfig{
-			Enabled:    false,
-			WebhookURL: "",
-			ChannelID:  "",
-		},
-	}
 }
 
 // LoadConfig loads configuration from a JSON file

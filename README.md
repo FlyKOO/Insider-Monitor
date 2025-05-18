@@ -138,14 +138,8 @@ Here are examples of different scan configurations:
 
 ### Running the Monitor
 
-#### Normal Mode
 ```bash
 go run cmd/monitor/main.go
-```
-
-#### Test Mode (with mock data)
-```bash
-go run cmd/monitor/main.go -test
 ```
 
 #### Custom Config File
