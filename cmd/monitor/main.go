@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"log"
 	"os"
 	"os/signal"
 	"strings"
@@ -14,6 +13,7 @@ import (
 	"github.com/accursedgalaxy/insider-monitor/internal/config"
 	"github.com/accursedgalaxy/insider-monitor/internal/monitor"
 	"github.com/accursedgalaxy/insider-monitor/internal/storage"
+	"github.com/accursedgalaxy/insider-monitor/internal/utils"
 )
 
 // WalletScanner interface defines the contract for wallet monitoring
@@ -22,9 +22,16 @@ type WalletScanner interface {
 }
 
 func main() {
+	// Create our custom logger
+	logger := utils.NewLogger(false)
+
 	testMode := flag.Bool("test", false, "Run in test mode with accelerated scanning")
 	configPath := flag.String("config", "config.json", "Path to configuration file")
 	flag.Parse()
+
+	// Print welcome message
+	fmt.Printf("\n%s%s SOLANA INSIDER MONITOR %s\n", utils.ColorBold, utils.ColorPurple, utils.ColorReset)
+	fmt.Printf("%s━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━%s\n\n", utils.ColorPurple, utils.ColorReset)
 
 	// Load configuration
 	var cfg *config.Config
@@ -32,16 +39,16 @@ func main() {
 
 	if *testMode {
 		cfg = config.GetTestConfig()
-		log.Println("Running in test mode with 5-second scan interval")
+		logger.Info("Running in test mode with 5-second scan interval")
 	} else {
 		cfg, err = config.LoadConfig(*configPath)
 		if err != nil {
-			log.Fatalf("failed to load config: %v", err)
+			logger.Fatal("Failed to load config: %v", err)
 		}
 	}
 
 	if err := cfg.Validate(); err != nil {
-		log.Fatalf("invalid configuration: %v", err)
+		logger.Fatal("Invalid configuration: %v", err)
 	}
 
 	// Initialize scanner
@@ -51,7 +58,7 @@ func main() {
 	} else {
 		scanner, err = monitor.NewWalletMonitor(cfg.NetworkURL, cfg.Wallets, &cfg.Scan)
 		if err != nil {
-			log.Fatalf("failed to create wallet monitor: %v", err)
+			logger.Fatal("Failed to create wallet monitor: %v", err)
 		}
 	}
 
@@ -59,23 +66,23 @@ func main() {
 	var alerter alerts.Alerter
 	if cfg.Discord.Enabled {
 		alerter = alerts.NewDiscordAlerter(cfg.Discord.WebhookURL, cfg.Discord.ChannelID)
-		log.Println("Discord alerts enabled")
+		logger.Config("Discord alerts enabled")
 	} else {
 		alerter = &alerts.ConsoleAlerter{}
-		log.Println("Console alerts enabled")
+		logger.Config("Console alerts enabled")
 	}
 
 	// Parse scan interval
 	scanInterval, err := time.ParseDuration(cfg.ScanInterval)
 	if err != nil {
-		log.Printf("invalid scan interval '%s', using default of 1 minute", cfg.ScanInterval)
+		logger.Warning("Invalid scan interval '%s', using default of 1 minute", cfg.ScanInterval)
 		scanInterval = time.Minute
 	}
 
-	runMonitor(scanner, alerter, cfg, scanInterval)
+	runMonitor(scanner, alerter, cfg, scanInterval, logger)
 }
 
-func runMonitor(scanner WalletScanner, alerter alerts.Alerter, cfg *config.Config, scanInterval time.Duration) {
+func runMonitor(scanner WalletScanner, alerter alerts.Alerter, cfg *config.Config, scanInterval time.Duration, logger *utils.Logger) {
 	storage := storage.New("./data")
 
 	// Create buffered channels for graceful shutdown
@@ -94,23 +101,23 @@ func runMonitor(scanner WalletScanner, alerter alerts.Alerter, cfg *config.Confi
 	var previousData map[string]*monitor.WalletData
 	if savedData, err := storage.LoadWalletData(); err == nil {
 		previousData = savedData
-		log.Println("Loaded previous wallet data from storage")
+		logger.Storage("Loaded previous wallet data from storage")
 	} else {
-		log.Printf("Warning: Could not load previous data: %v. Will initialize after first scan.", err)
+		logger.Warning("Could not load previous data: %v. Will initialize after first scan.", err)
 		previousData = make(map[string]*monitor.WalletData)
 	}
 
 	// Perform initial scan immediately
-	log.Println("Performing initial wallet scan...")
+	logger.Scan("Performing initial wallet scan...")
 	initialResults, err := scanner.ScanAllWallets()
 	if err != nil {
-		log.Printf("Warning: initial scan had errors: %v", err)
+		logger.Warning("Initial scan had errors: %v", err)
 	} else {
 		if err := storage.SaveWalletData(initialResults); err != nil {
-			log.Printf("Error saving initial data: %v", err)
+			logger.Error("Error saving initial data: %v", err)
 		}
 		lastSuccessfulScan = time.Now()
-		log.Printf("Initial scan complete. Found data for %d wallets", len(initialResults))
+		logger.Success("Initial scan complete. Found data for %d wallets", len(initialResults))
 		scanner.(*monitor.WalletMonitor).DisplayWalletOverview(initialResults)
 	}
 
@@ -119,7 +126,7 @@ func runMonitor(scanner WalletScanner, alerter alerts.Alerter, cfg *config.Confi
 		ticker := time.NewTicker(scanInterval)
 		defer ticker.Stop()
 
-		log.Printf("Starting monitoring loop with %v interval...", scanInterval)
+		logger.Info("Starting monitoring loop with %v interval...", scanInterval)
 
 		for {
 			select {
@@ -127,16 +134,16 @@ func runMonitor(scanner WalletScanner, alerter alerts.Alerter, cfg *config.Confi
 				// Check if we've exceeded the maximum time between scans
 				if time.Since(lastSuccessfulScan) > maxTimeBetweenScans && !connectionLost {
 					connectionLost = true
-					log.Printf("No successful scan in %v, marking connection as lost", maxTimeBetweenScans)
+					logger.Warning("No successful scan in %v, marking connection as lost", maxTimeBetweenScans)
 					continue
 				}
 
 				newResults, err := scanner.ScanAllWallets()
 				if err != nil {
-					log.Printf("Error scanning wallets: %v", err)
+					logger.Error("Error scanning wallets: %v", err)
 					if !connectionLost {
 						connectionLost = true
-						log.Println("Connection appears to be lost, will suppress alerts until restored")
+						logger.Network("Connection appears to be lost, will suppress alerts until restored")
 					}
 					continue
 				}
@@ -144,7 +151,7 @@ func runMonitor(scanner WalletScanner, alerter alerts.Alerter, cfg *config.Confi
 				// Connection restored check
 				if connectionLost {
 					connectionLost = false
-					log.Println("Connection restored, loading previous data to prevent false alerts")
+					logger.Network("Connection restored, loading previous data to prevent false alerts")
 					if savedData, err := storage.LoadWalletData(); err == nil {
 						previousData = savedData
 					}
@@ -158,15 +165,15 @@ func runMonitor(scanner WalletScanner, alerter alerts.Alerter, cfg *config.Confi
 				// Process changes only if we have previous data
 				if len(previousData) > 0 {
 					changes := monitor.DetectChanges(previousData, newResults, cfg.Alerts.SignificantChange)
-					processChanges(changes, alerter, cfg.Alerts)
+					processChanges(changes, alerter, cfg.Alerts, logger)
 				} else {
 					// First scan, just store the data without generating alerts
-					log.Println("Initial scan completed, storing baseline data")
+					logger.Info("Initial scan completed, storing baseline data")
 				}
 
 				// Save new results
 				if err := storage.SaveWalletData(newResults); err != nil {
-					log.Printf("Error saving data: %v", err)
+					logger.Error("Error saving data: %v", err)
 				}
 				previousData = newResults
 
@@ -174,7 +181,7 @@ func runMonitor(scanner WalletScanner, alerter alerts.Alerter, cfg *config.Confi
 				scanner.(*monitor.WalletMonitor).DisplayWalletOverview(newResults)
 
 			case <-done:
-				log.Println("Monitoring loop stopped")
+				logger.Info("Monitoring loop stopped")
 				return
 			}
 		}
@@ -182,15 +189,15 @@ func runMonitor(scanner WalletScanner, alerter alerts.Alerter, cfg *config.Confi
 
 	// Wait for interrupt signal
 	<-interrupt
-	log.Println("Shutting down gracefully...")
+	logger.Info("Shutting down gracefully...")
 	if err := monitor.LogToFile("./data", "Monitor shutting down gracefully"); err != nil {
-		log.Printf("Failed to write shutdown log: %v", err)
+		logger.Error("Failed to write shutdown log: %v", err)
 	}
 	done <- true
 	time.Sleep(time.Second) // Give a moment for final cleanup
 }
 
-func processChanges(changes []monitor.Change, alerter alerts.Alerter, alertCfg config.AlertConfig) {
+func processChanges(changes []monitor.Change, alerter alerts.Alerter, alertCfg config.AlertConfig, logger *utils.Logger) {
 	for _, change := range changes {
 		var msg string
 		var level alerts.AlertLevel
@@ -263,15 +270,10 @@ func processChanges(changes []monitor.Change, alerter alerts.Alerter, alertCfg c
 			}
 
 			if err := alerter.SendAlert(alert); err != nil {
-				log.Printf("failed to send alert: %v", err)
-			}
-			if err := monitor.LogToFile("./data", msg); err != nil {
-				log.Printf("Failed to write log: %v", err)
+				logger.Error("Failed to send alert: %v", err)
 			}
 		} else {
-			if err := monitor.LogToFile("./data", fmt.Sprintf("INFO: %s", msg)); err != nil {
-				log.Printf("Failed to write info log: %v", err)
-			}
+			logger.Info(msg)
 		}
 	}
 }

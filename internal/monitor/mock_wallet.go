@@ -1,6 +1,8 @@
 package monitor
 
 import (
+	"fmt"
+	"sort"
 	"time"
 )
 
@@ -96,4 +98,89 @@ func (m *MockWalletMonitor) ScanAllWallets() (map[string]*WalletData, error) {
 	}
 
 	return results, nil
+}
+
+// Add DisplayWalletOverview method to match the real monitor
+func (m *MockWalletMonitor) DisplayWalletOverview(walletDataMap map[string]*WalletData) {
+	// Terminal color codes
+	const (
+		colorReset  = "\033[0m"
+		colorGreen  = "\033[32m"
+		colorYellow = "\033[33m"
+		colorBlue   = "\033[34m"
+		colorPurple = "\033[35m"
+		colorCyan   = "\033[36m"
+		colorBold   = "\033[1m"
+	)
+
+	// Symbols
+	const (
+		walletSymbol = "💼"
+		tokenSymbol  = "🔹"
+		dollarSymbol = "💲"
+		divider      = "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	)
+
+	fmt.Println()
+	fmt.Printf("%s%s TEST MODE: SIMULATED WALLET DATA %s\n", colorBold, colorYellow, colorReset)
+	fmt.Printf("%s%s %s\n\n", colorPurple, divider, colorReset)
+
+	for _, wallet := range walletDataMap {
+		fmt.Printf("%s%s %s %s%s\n", colorBold, colorBlue, walletSymbol, wallet.WalletAddress, colorReset)
+
+		// Sort tokens
+		type tokenHolding struct {
+			mint    string
+			symbol  string
+			balance uint64
+		}
+		
+		holdings := make([]tokenHolding, 0)
+		for mint, info := range wallet.TokenAccounts {
+			holdings = append(holdings, tokenHolding{
+				mint:    mint,
+				symbol:  info.Symbol,
+				balance: info.Balance,
+			})
+		}
+
+		// Sort by balance
+		sort.Slice(holdings, func(i, j int) bool {
+			return holdings[i].balance > holdings[j].balance
+		})
+
+		// Display tokens
+		for _, holding := range holdings {
+			// Format amount based on token
+			var amountStr, tokenName string
+			
+			if holding.mint == "So11111111111111111111111111111111111111112" {
+				// SOL
+				amountStr = fmt.Sprintf("%.4f", float64(holding.balance)/1e9)
+				tokenName = "SOL"
+			} else if holding.mint == "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v" {
+				// USDC
+				amountStr = fmt.Sprintf("%.2f", float64(holding.balance)/1e6)
+				tokenName = "USDC"
+			} else if holding.mint == "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263" {
+				// BONK
+				amountStr = fmt.Sprintf("%.2f", float64(holding.balance)/1e5)
+				tokenName = "BONK"
+			} else {
+				amountStr = fmt.Sprintf("%.2f", float64(holding.balance)/1e9)
+				tokenName = holding.symbol
+			}
+			
+			fmt.Printf("   %s %s%-10s%s %15s\n", 
+				tokenSymbol,
+				colorBold,
+				tokenName,
+				colorReset,
+				amountStr)
+		}
+		fmt.Println()
+	}
+
+	fmt.Printf("%s%s %s\n", colorPurple, divider, colorReset)
+	fmt.Printf("%sNote: Test mode simulates activity every 5 seconds%s\n\n", colorYellow, colorReset)
 }

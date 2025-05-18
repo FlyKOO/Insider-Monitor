@@ -425,9 +425,33 @@ type tokenHolding struct {
 	Symbol   string
 }
 
+// Update the DisplayWalletOverview function to create a more attractive output
 func (m *WalletMonitor) DisplayWalletOverview(walletDataMap map[string]*WalletData) {
-	fmt.Println("\nWallet Holdings Overview:")
-	fmt.Println("------------------------")
+	// Terminal color codes
+	const (
+		colorReset  = "\033[0m"
+		colorRed    = "\033[31m"
+		colorGreen  = "\033[32m"
+		colorYellow = "\033[33m"
+		colorBlue   = "\033[34m"
+		colorPurple = "\033[35m"
+		colorCyan   = "\033[36m"
+		colorWhite  = "\033[37m"
+		colorBold   = "\033[1m"
+	)
+
+	// Symbols
+	const (
+		walletSymbol = "💼"
+		tokenSymbol  = "🔹"
+		dollarSymbol = "💲"
+		moreSymbol   = "..."
+		divider      = "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	)
+
+	fmt.Println()
+	fmt.Printf("%s%s SOLANA WALLET MONITOR %s\n", colorBold, colorPurple, colorReset)
+	fmt.Printf("%s%s %s\n\n", colorPurple, divider, colorReset)
 
 	// Collect all unique mints
 	mints := make([]string, 0)
@@ -442,15 +466,20 @@ func (m *WalletMonitor) DisplayWalletOverview(walletDataMap map[string]*WalletDa
 		log.Printf("Error updating prices: %v", err)
 	}
 
+	// Total value counter
+	totalPortfolioValue := 0.0
+
 	for _, wallet := range m.wallets {
-		fmt.Printf("📍 %s\n", wallet.String())
+		fmt.Printf("%s%s %s %s%s\n", colorBold, colorBlue, walletSymbol, wallet.String(), colorReset)
 		walletData, exists := walletDataMap[wallet.String()]
 		if !exists {
+			fmt.Printf("   %sNo data available%s\n\n", colorYellow, colorReset)
 			continue
 		}
 
 		// Convert token holdings to slice for sorting
 		holdings := make([]tokenHolding, 0)
+		walletTotalValue := 0.0
 
 		for mint, info := range walletData.TokenAccounts {
 			// Get price data from Jupiter
@@ -461,38 +490,135 @@ func (m *WalletMonitor) DisplayWalletOverview(walletDataMap map[string]*WalletDa
 				// Convert balance to float considering decimals
 				actualAmount := float64(info.Balance) / math.Pow(10, float64(info.Decimals))
 				usdValue = actualAmount * priceData.Price
+				walletTotalValue += usdValue
+			}
+
+			// Try to look up well-known token addresses to get better names
+			symbol := info.Symbol
+			if tokenName, found := getKnownTokenName(mint); found {
+				symbol = tokenName
 			}
 
 			holdings = append(holdings, tokenHolding{
 				Mint:     mint,
 				Amount:   float64(info.Balance),
 				USDValue: usdValue,
+				Symbol:   symbol,
 			})
 		}
+
+		totalPortfolioValue += walletTotalValue
 
 		// Sort by USD value descending
 		sort.Slice(holdings, func(i, j int) bool {
 			return holdings[i].USDValue > holdings[j].USDValue
 		})
 
-		// Display top 5 holdings
+		// Show wallet total
+		if walletTotalValue > 0 {
+			// Format based on size
+			valueStr := ""
+			if walletTotalValue >= 1000000 {
+				valueStr = fmt.Sprintf("$%.2fM", walletTotalValue/1000000)
+			} else if walletTotalValue >= 1000 {
+				valueStr = fmt.Sprintf("$%.2fK", walletTotalValue/1000)
+			} else {
+				valueStr = fmt.Sprintf("$%.2f", walletTotalValue)
+			}
+			fmt.Printf("   %s%sTotal Value: %s%s\n", colorBold, colorGreen, valueStr, colorReset)
+		}
+
+		// Display top 5 holdings with better formatting
 		for i := 0; i < min(5, len(holdings)); i++ {
 			holding := holdings[i]
-			shortMint := holding.Mint[:8] + "..."
+			
+			// Get short mint or symbol for display
+			displayName := holding.Symbol
+			if displayName == holding.Mint[:8]+"..." {
+				// If it's still just the short mint, check for known tokens
+				if tokenName, found := getKnownTokenName(holding.Mint); found {
+					displayName = tokenName
+				}
+			}
+			
+			// Format amount
+			actualAmount := holding.Amount / math.Pow(10, float64(9)) // assuming 9 decimals
+			amountStr := ""
+			if actualAmount >= 1000000 {
+				amountStr = fmt.Sprintf("%.2fM", actualAmount/1000000)
+			} else if actualAmount >= 1000 {
+				amountStr = fmt.Sprintf("%.2fK", actualAmount/1000)
+			} else {
+				amountStr = fmt.Sprintf("%.4f", actualAmount)
+			}
+
+			// Choose color based on value
+			valueColor := colorWhite
+			if holding.USDValue > 1000 {
+				valueColor = colorGreen
+			} else if holding.USDValue > 100 {
+				valueColor = colorCyan
+			}
 
 			if holding.USDValue > 0 {
-				actualAmount := holding.Amount / math.Pow(10, float64(9)) // assuming 9 decimals for now
-				fmt.Printf("   • %s: %.2fM ($%.2f)\n", shortMint, actualAmount, holding.USDValue)
+				fmt.Printf("   %s %s%-15s%s %12s %s%s($%.2f)%s\n", 
+					tokenSymbol, 
+					colorBold, 
+					displayName, 
+					colorReset,
+					amountStr,
+					valueColor,
+					dollarSymbol,
+					holding.USDValue,
+					colorReset)
 			} else {
-				actualAmount := holding.Amount / math.Pow(10, float64(9))
-				fmt.Printf("   • %s: %.2fM\n", shortMint, actualAmount)
+				fmt.Printf("   %s %s%-15s%s %12s\n", 
+					tokenSymbol, 
+					colorBold, 
+					displayName, 
+					colorReset,
+					amountStr)
 			}
 		}
 
 		if len(holdings) > 5 {
-			fmt.Printf("   ... and %d more tokens\n\n", len(holdings)-5)
+			fmt.Printf("   %s %s%d more tokens%s\n", moreSymbol, colorYellow, len(holdings)-5, colorReset)
+		}
+		fmt.Println()
+	}
+
+	// Display total portfolio value
+	if totalPortfolioValue > 0 {
+		fmt.Printf("%s%s %s\n", colorPurple, divider, colorReset)
+		if totalPortfolioValue >= 1000000 {
+			fmt.Printf("%s%sTOTAL PORTFOLIO VALUE: $%.2fM%s\n", colorBold, colorGreen, totalPortfolioValue/1000000, colorReset)
+		} else if totalPortfolioValue >= 1000 {
+			fmt.Printf("%s%sTOTAL PORTFOLIO VALUE: $%.2fK%s\n", colorBold, colorGreen, totalPortfolioValue/1000, colorReset)
+		} else {
+			fmt.Printf("%s%sTOTAL PORTFOLIO VALUE: $%.2f%s\n", colorBold, colorGreen, totalPortfolioValue, colorReset)
 		}
 	}
+	
+	fmt.Printf("%s%s %s\n", colorPurple, divider, colorReset)
+	fmt.Printf("%sLast updated: %s%s\n\n", colorYellow, time.Now().Format("2006-01-02 15:04:05"), colorReset)
+}
+
+// Helper function to lookup well-known token names
+func getKnownTokenName(mint string) (string, bool) {
+	// Map of well-known token mints to symbols
+	knownTokens := map[string]string{
+		"So11111111111111111111111111111111111111112": "SOL",
+		"EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v": "USDC",
+		"Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB": "USDT",
+		"DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263": "BONK",
+		"7dHbWXmci3dT8UFYWYZweBLXgycu7Y3iL6trKn1Y7ARj": "stSOL",
+		"mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So": "mSOL",
+		"kinXdEcpDQeHPEuQnqmUgtYykqKGVFq6CeVX5iAHJq6": "KIN",
+		"JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN": "JUP",
+	}
+
+	symbol, found := knownTokens[mint]
+	return symbol, found
 }
 
 // Helper function for min
