@@ -36,17 +36,34 @@ func main() {
 	// Load configuration
 	cfg, err := config.LoadConfig(*configPath)
 	if err != nil {
-		logger.Fatal("Failed to load config: %v", err)
+		if os.IsNotExist(err) {
+			logger.Fatal("Configuration file not found: %v\n\n" +
+				"💡 Quick fix:\n" +
+				"   1. Copy the example: cp config.example.json config.json\n" +
+				"   2. Edit config.json with your settings\n" +
+				"   3. Get a free RPC endpoint from:\n" +
+				"      • Helius: https://helius.dev\n" +
+				"      • QuickNode: https://quicknode.com\n" +
+				"      • Triton: https://triton.one", err)
+		}
+		logger.Fatal("Failed to load config: %v\n\n" +
+			"💡 Check that your config.json file has valid JSON syntax.\n" +
+			"   You can validate it at https://jsonlint.com/", err)
 	}
 
 	if err := cfg.Validate(); err != nil {
-		logger.Fatal("Invalid configuration: %v", err)
+		logger.Fatal("Configuration validation failed:\n%v", err)
 	}
 
 	// Initialize scanner
 	scanner, err := monitor.NewWalletMonitor(cfg.NetworkURL, cfg.Wallets, &cfg.Scan)
 	if err != nil {
-		logger.Fatal("Failed to create wallet monitor: %v", err)
+		logger.Fatal("Failed to create wallet monitor: %v\n\n" +
+			"💡 This usually means:\n" +
+			"   • Invalid wallet address format in config.json\n" +
+			"   • Network connectivity issues\n" +
+			"   • RPC endpoint problems\n\n" +
+			"   Verify your wallet addresses are valid Solana addresses.", err)
 	}
 
 	// Initialize alerter
@@ -98,7 +115,13 @@ func runMonitor(scanner WalletScanner, alerter alerts.Alerter, cfg *config.Confi
 	logger.Scan("Performing initial wallet scan...")
 	initialResults, err := scanner.ScanAllWallets()
 	if err != nil {
-		logger.Warning("Initial scan had errors: %v", err)
+		logger.Error("Initial scan failed: %v", err)
+		logger.Error("\n💡 Common solutions:")
+		logger.Error("   • Check your internet connection")
+		logger.Error("   • Verify your RPC endpoint is working")
+		logger.Error("   • Ensure wallet addresses in config.json are valid")
+		logger.Error("   • Try a different RPC provider if rate limited")
+		logger.Error("\nThe monitor will continue trying in the background...")
 	} else {
 		if err := storage.SaveWalletData(initialResults); err != nil {
 			logger.Error("Error saving initial data: %v", err)

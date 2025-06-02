@@ -98,9 +98,19 @@ func (w *WalletMonitor) getTokenAccountsWithRetry(wallet solana.PublicKey) (*rpc
 		}
 
 		lastErr = err
-		if strings.Contains(err.Error(), "429") {
-			log.Printf("Rate limited on attempt %d for wallet %s, waiting %v before retry",
+		if strings.Contains(err.Error(), "429") || strings.Contains(err.Error(), "Too Many Requests") {
+			log.Printf("⚠️  Rate limited on attempt %d for wallet %s, waiting %v before retry",
 				attempt+1, wallet.String(), backoff)
+			
+			// Show helpful message on first rate limit
+			if attempt == 0 {
+				log.Printf("💡 Rate limit detected. This usually happens when using public RPC endpoints.")
+				log.Printf("   Consider upgrading to a dedicated RPC provider:")
+				log.Printf("   • Helius: 100k requests/day free - https://helius.dev")
+				log.Printf("   • QuickNode: 30M requests/month free - https://quicknode.com")
+				log.Printf("   • Triton: 10M requests/month free - https://triton.one")
+			}
+			
 			time.Sleep(backoff)
 
 			// Exponential backoff with max
@@ -111,8 +121,37 @@ func (w *WalletMonitor) getTokenAccountsWithRetry(wallet solana.PublicKey) (*rpc
 			continue
 		}
 
-		// If it's not a rate limit error, return immediately
-		return nil, err
+		// Handle other common errors with helpful messages
+		if strings.Contains(err.Error(), "connection") || strings.Contains(err.Error(), "timeout") {
+			return nil, fmt.Errorf("connection error: %w\n\n"+
+				"💡 This might be due to:\n"+
+				"   • Network connectivity issues\n"+
+				"   • RPC endpoint is down or overloaded\n"+
+				"   • Try a different RPC provider from the list above", err)
+		}
+
+		// If it's not a rate limit or connection error, return immediately
+		return nil, fmt.Errorf("RPC request failed: %w\n\n"+
+			"💡 If this error persists, try:\n"+
+			"   • Check your RPC endpoint URL in config.json\n"+
+			"   • Verify your network connection\n"+
+			"   • Consider switching to a more reliable RPC provider", err)
+	}
+
+	// Enhanced final error message with actionable suggestions
+	if strings.Contains(lastErr.Error(), "429") || strings.Contains(lastErr.Error(), "Too Many Requests") {
+		return nil, fmt.Errorf("❌ Rate limit exceeded after %d retries\n\n"+
+			"🔧 SOLUTION: You're likely using a public RPC endpoint with strict limits.\n"+
+			"   Update your config.json with a dedicated RPC endpoint:\n\n"+
+			"   {\n"+
+			"     \"network_url\": \"YOUR_DEDICATED_RPC_URL_HERE\",\n"+
+			"     ...\n"+
+			"   }\n\n"+
+			"🚀 Get a free RPC endpoint from:\n"+
+			"   • Helius: https://helius.dev (100k requests/day)\n"+
+			"   • QuickNode: https://quicknode.com (30M requests/month)\n"+
+			"   • Triton: https://triton.one (10M requests/month)\n\n"+
+			"Original error: %w", maxRetries, lastErr)
 	}
 
 	return nil, fmt.Errorf("failed after %d retries: %w", maxRetries, lastErr)
@@ -158,7 +197,7 @@ func (w *WalletMonitor) GetWalletData(wallet solana.PublicKey) (*WalletData, err
 	// Use the retry version instead
 	accounts, err := w.getTokenAccountsWithRetry(wallet)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get token accounts: %w", err)
+		return nil, fmt.Errorf("failed to get token accounts for wallet %s: %w", wallet.String(), err)
 	}
 
 	// Process token accounts
@@ -166,7 +205,7 @@ func (w *WalletMonitor) GetWalletData(wallet solana.PublicKey) (*WalletData, err
 		var tokenAccount token.Account
 		err = bin.NewBinDecoder(acc.Account.Data.GetBinary()).Decode(&tokenAccount)
 		if err != nil {
-			log.Printf("warning: failed to decode token account: %v", err)
+			log.Printf("⚠️  Warning: failed to decode token account (this is usually normal): %v", err)
 			continue
 		}
 
@@ -184,7 +223,7 @@ func (w *WalletMonitor) GetWalletData(wallet solana.PublicKey) (*WalletData, err
 		}
 	}
 
-	log.Printf("Wallet %s: found %d token accounts (after filtering)", wallet.String(), len(walletData.TokenAccounts))
+	log.Printf("✅ Wallet %s: found %d token accounts (after filtering)", wallet.String(), len(walletData.TokenAccounts))
 	return walletData, nil
 }
 
@@ -231,14 +270,30 @@ func (w *WalletMonitor) checkConnection() error {
 	// Try to get slot number as a simple connection test
 	_, err := w.client.GetSlot(context.Background(), rpc.CommitmentFinalized)
 	w.isConnected = err == nil
-	return err
+	
+	if err != nil {
+		if strings.Contains(err.Error(), "429") || strings.Contains(err.Error(), "Too Many Requests") {
+			return fmt.Errorf("RPC rate limit exceeded during connection check\n\n"+
+				"💡 This indicates you're using a public RPC endpoint with strict limits.\n"+
+				"   Consider upgrading to a dedicated RPC provider for reliable monitoring.\n\n"+
+				"Original error: %w", err)
+		}
+		
+		return fmt.Errorf("connection check failed: %w\n\n"+
+			"💡 Troubleshooting steps:\n"+
+			"   1. Check your network connection\n"+
+			"   2. Verify your RPC endpoint URL in config.json\n"+
+			"   3. Try a different RPC provider if the issue persists", err)
+	}
+	
+	return nil
 }
 
 // Update ScanAllWallets to handle batches
 func (w *WalletMonitor) ScanAllWallets() (map[string]*WalletData, error) {
 	// Check connection first
 	if err := w.checkConnection(); err != nil {
-		return nil, fmt.Errorf("connection check failed: %w", err)
+		return nil, err
 	}
 
 	results := make(map[string]*WalletData)
@@ -250,23 +305,22 @@ func (w *WalletMonitor) ScanAllWallets() (map[string]*WalletData, error) {
 			end = len(w.wallets)
 		}
 
-		log.Printf("Processing wallets %d-%d of %d", i+1, end, len(w.wallets))
+		log.Printf("📊 Processing wallets %d-%d of %d", i+1, end, len(w.wallets))
 
 		// Process batch
 		for _, wallet := range w.wallets[i:end] {
 			data, err := w.GetWalletData(wallet)
 			if err != nil {
-				log.Printf("error scanning wallet %s: %v", wallet.String(), err)
-				continue
+				log.Printf("❌ Error scanning wallet %s: %v", wallet.String(), err)
+				// Return the error to propagate the enhanced error messages
+				return nil, fmt.Errorf("failed to scan wallet %s: %w", wallet.String(), err)
 			}
 			results[wallet.String()] = data
 		}
 
-		// Larger wait between batches
+		// Small delay between batches to be nice to the RPC
 		if end < len(w.wallets) {
-			waitTime := 3 * time.Second
-			log.Printf("Waiting %v before next batch...", waitTime)
-			time.Sleep(waitTime)
+			time.Sleep(500 * time.Millisecond)
 		}
 	}
 

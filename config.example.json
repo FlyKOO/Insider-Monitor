@@ -1,5 +1,7 @@
 {
-    "network_url": "https://api.mainnet-beta.solana.com",
+    "_comment": "⚠️ IMPORTANT: Replace the network_url below with your dedicated RPC endpoint!",
+    "_comment_rpc": "Get a free RPC from: Helius (helius.dev), QuickNode (quicknode.com), or Triton (triton.one)",
+    "network_url": "YOUR_DEDICATED_RPC_URL_HERE",
     "wallets": [
         "CvQk2xkXtiMj2JqqVx1YZkeSqQ7jyQkNqqjeNE1jPTfc",
         "FjmRj8y9xfDaj5Aygq88t5jAFbpxrbZ16JNPPG1sx9FQ",
