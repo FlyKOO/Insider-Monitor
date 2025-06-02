@@ -45,12 +45,12 @@ func (a *ConsoleAlerter) SendAlert(alert Alert) error {
 
 	// Print alert header
 	fmt.Println(topBorder)
-	fmt.Printf("%s%s [%s] %s ALERT - %s %s\n", 
-		color, 
+	fmt.Printf("%s%s [%s] %s ALERT - %s %s\n",
+		color,
 		symbol,
-		timestamp, 
+		timestamp,
 		alertType,
-		utils.ColorBold, 
+		utils.ColorBold,
 		utils.ColorReset)
 
 	// Print alert details
@@ -58,9 +58,9 @@ func (a *ConsoleAlerter) SendAlert(alert Alert) error {
 	if len(shortWallet) > 20 {
 		shortWallet = shortWallet[:8] + "..." + shortWallet[len(shortWallet)-8:]
 	}
-	
+
 	fmt.Printf("Wallet: %s%s%s\n", utils.ColorBold, shortWallet, utils.ColorReset)
-	
+
 	// Format message content
 	lines := strings.Split(alert.Message, "\n")
 	for _, line := range lines {
@@ -76,9 +76,9 @@ func (a *ConsoleAlerter) SendAlert(alert Alert) error {
 				direction = "↓"
 				valueColor = utils.ColorRed
 			}
-			fmt.Printf("Change: %s%s %.2f%%%s\n", 
-				valueColor, 
-				direction, 
+			fmt.Printf("Change: %s%s %.2f%%%s\n",
+				valueColor,
+				direction,
 				pct,
 				utils.ColorReset)
 		}
@@ -87,4 +87,4 @@ func (a *ConsoleAlerter) SendAlert(alert Alert) error {
 	fmt.Println(bottomBorder)
 
 	return nil
-} 
+}

@@ -101,7 +101,7 @@ func (w *WalletMonitor) getTokenAccountsWithRetry(wallet solana.PublicKey) (*rpc
 		if strings.Contains(err.Error(), "429") || strings.Contains(err.Error(), "Too Many Requests") {
 			log.Printf("⚠️  Rate limited on attempt %d for wallet %s, waiting %v before retry",
 				attempt+1, wallet.String(), backoff)
-			
+
 			// Show helpful message on first rate limit
 			if attempt == 0 {
 				log.Printf("💡 Rate limit detected. This usually happens when using public RPC endpoints.")
@@ -110,7 +110,7 @@ func (w *WalletMonitor) getTokenAccountsWithRetry(wallet solana.PublicKey) (*rpc
 				log.Printf("   • QuickNode: 30M requests/month free - https://quicknode.com")
 				log.Printf("   • Triton: 10M requests/month free - https://triton.one")
 			}
-			
+
 			time.Sleep(backoff)
 
 			// Exponential backoff with max
@@ -270,7 +270,7 @@ func (w *WalletMonitor) checkConnection() error {
 	// Try to get slot number as a simple connection test
 	_, err := w.client.GetSlot(context.Background(), rpc.CommitmentFinalized)
 	w.isConnected = err == nil
-	
+
 	if err != nil {
 		if strings.Contains(err.Error(), "429") || strings.Contains(err.Error(), "Too Many Requests") {
 			return fmt.Errorf("RPC rate limit exceeded during connection check\n\n"+
@@ -278,14 +278,14 @@ func (w *WalletMonitor) checkConnection() error {
 				"   Consider upgrading to a dedicated RPC provider for reliable monitoring.\n\n"+
 				"Original error: %w", err)
 		}
-		
+
 		return fmt.Errorf("connection check failed: %w\n\n"+
 			"💡 Troubleshooting steps:\n"+
 			"   1. Check your network connection\n"+
 			"   2. Verify your RPC endpoint URL in config.json\n"+
 			"   3. Try a different RPC provider if the issue persists", err)
 	}
-	
+
 	return nil
 }
 
@@ -585,7 +585,7 @@ func (m *WalletMonitor) DisplayWalletOverview(walletDataMap map[string]*WalletDa
 		// Display top 5 holdings with better formatting
 		for i := 0; i < min(5, len(holdings)); i++ {
 			holding := holdings[i]
-			
+
 			// Get short mint or symbol for display
 			displayName := holding.Symbol
 			if displayName == holding.Mint[:8]+"..." {
@@ -594,7 +594,7 @@ func (m *WalletMonitor) DisplayWalletOverview(walletDataMap map[string]*WalletDa
 					displayName = tokenName
 				}
 			}
-			
+
 			// Format amount
 			actualAmount := holding.Amount / math.Pow(10, float64(9)) // assuming 9 decimals
 			amountStr := ""
@@ -615,10 +615,10 @@ func (m *WalletMonitor) DisplayWalletOverview(walletDataMap map[string]*WalletDa
 			}
 
 			if holding.USDValue > 0 {
-				fmt.Printf("   %s %s%-15s%s %12s %s%s($%.2f)%s\n", 
-					tokenSymbol, 
-					colorBold, 
-					displayName, 
+				fmt.Printf("   %s %s%-15s%s %12s %s%s($%.2f)%s\n",
+					tokenSymbol,
+					colorBold,
+					displayName,
 					colorReset,
 					amountStr,
 					valueColor,
@@ -626,10 +626,10 @@ func (m *WalletMonitor) DisplayWalletOverview(walletDataMap map[string]*WalletDa
 					holding.USDValue,
 					colorReset)
 			} else {
-				fmt.Printf("   %s %s%-15s%s %12s\n", 
-					tokenSymbol, 
-					colorBold, 
-					displayName, 
+				fmt.Printf("   %s %s%-15s%s %12s\n",
+					tokenSymbol,
+					colorBold,
+					displayName,
 					colorReset,
 					amountStr)
 			}
@@ -652,7 +652,7 @@ func (m *WalletMonitor) DisplayWalletOverview(walletDataMap map[string]*WalletDa
 			fmt.Printf("%s%sTOTAL PORTFOLIO VALUE: $%.2f%s\n", colorBold, colorGreen, totalPortfolioValue, colorReset)
 		}
 	}
-	
+
 	fmt.Printf("%s%s %s\n", colorPurple, divider, colorReset)
 	fmt.Printf("%sLast updated: %s%s\n\n", colorYellow, time.Now().Format("2006-01-02 15:04:05"), colorReset)
 }
@@ -661,14 +661,14 @@ func (m *WalletMonitor) DisplayWalletOverview(walletDataMap map[string]*WalletDa
 func getKnownTokenName(mint string) (string, bool) {
 	// Map of well-known token mints to symbols
 	knownTokens := map[string]string{
-		"So11111111111111111111111111111111111111112": "SOL",
+		"So11111111111111111111111111111111111111112":  "SOL",
 		"EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v": "USDC",
 		"Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB": "USDT",
 		"DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263": "BONK",
 		"7dHbWXmci3dT8UFYWYZweBLXgycu7Y3iL6trKn1Y7ARj": "stSOL",
-		"mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So": "mSOL",
-		"kinXdEcpDQeHPEuQnqmUgtYykqKGVFq6CeVX5iAHJq6": "KIN",
-		"JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN": "JUP",
+		"mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So":  "mSOL",
+		"kinXdEcpDQeHPEuQnqmUgtYykqKGVFq6CeVX5iAHJq6":  "KIN",
+		"JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN":  "JUP",
 	}
 
 	symbol, found := knownTokens[mint]

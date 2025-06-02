@@ -54,7 +54,7 @@ func NewLogger(fileOnly bool) *Logger {
 // formatLog formats a log message with timestamp, emoji, and color
 func (l *Logger) formatLog(level, symbol, color, msg string) string {
 	timestamp := time.Now().Format("2006/01/02 15:04:05")
-	return fmt.Sprintf("%s %s %s%s%s %s", 
+	return fmt.Sprintf("%s %s %s%s%s %s",
 		timestamp,
 		symbol,
 		color,
@@ -71,7 +71,7 @@ func (l *Logger) Info(format string, args ...interface{}) {
 		l.stdLogger.Println(logMsg)
 	}
 	// Add file logging if needed
-	LogToFile("./data", logMsg)
+	_ = LogToFile("./data", logMsg)
 }
 
 // Success logs a success message
@@ -81,7 +81,7 @@ func (l *Logger) Success(format string, args ...interface{}) {
 	if !l.fileOnly {
 		l.stdLogger.Println(logMsg)
 	}
-	LogToFile("./data", logMsg)
+	_ = LogToFile("./data", logMsg)
 }
 
 // Warning logs a warning message
@@ -91,7 +91,7 @@ func (l *Logger) Warning(format string, args ...interface{}) {
 	if !l.fileOnly {
 		l.stdLogger.Println(logMsg)
 	}
-	LogToFile("./data", logMsg)
+	_ = LogToFile("./data", logMsg)
 }
 
 // Error logs an error message
@@ -101,7 +101,7 @@ func (l *Logger) Error(format string, args ...interface{}) {
 	if !l.fileOnly {
 		l.stdLogger.Println(logMsg)
 	}
-	LogToFile("./data", logMsg)
+	_ = LogToFile("./data", logMsg)
 }
 
 // Network logs a network-related message
@@ -111,7 +111,7 @@ func (l *Logger) Network(format string, args ...interface{}) {
 	if !l.fileOnly {
 		l.stdLogger.Println(logMsg)
 	}
-	LogToFile("./data", logMsg)
+	_ = LogToFile("./data", logMsg)
 }
 
 // Wallet logs a wallet-related message
@@ -121,7 +121,7 @@ func (l *Logger) Wallet(format string, args ...interface{}) {
 	if !l.fileOnly {
 		l.stdLogger.Println(logMsg)
 	}
-	LogToFile("./data", logMsg)
+	_ = LogToFile("./data", logMsg)
 }
 
 // Config logs a configuration-related message
@@ -131,7 +131,7 @@ func (l *Logger) Config(format string, args ...interface{}) {
 	if !l.fileOnly {
 		l.stdLogger.Println(logMsg)
 	}
-	LogToFile("./data", logMsg)
+	_ = LogToFile("./data", logMsg)
 }
 
 // Scan logs a scanning-related message
@@ -141,7 +141,7 @@ func (l *Logger) Scan(format string, args ...interface{}) {
 	if !l.fileOnly {
 		l.stdLogger.Println(logMsg)
 	}
-	LogToFile("./data", logMsg)
+	_ = LogToFile("./data", logMsg)
 }
 
 // Storage logs a storage-related message
@@ -151,7 +151,7 @@ func (l *Logger) Storage(format string, args ...interface{}) {
 	if !l.fileOnly {
 		l.stdLogger.Println(logMsg)
 	}
-	LogToFile("./data", logMsg)
+	_ = LogToFile("./data", logMsg)
 }
 
 // Fatal logs a fatal error and exits the program
@@ -161,7 +161,7 @@ func (l *Logger) Fatal(format string, args ...interface{}) {
 	if !l.fileOnly {
 		l.stdLogger.Println(logMsg)
 	}
-	LogToFile("./data", logMsg)
+	_ = LogToFile("./data", logMsg)
 	os.Exit(1)
 }
 
@@ -189,4 +189,4 @@ func LogToFile(dir string, message string) error {
 	}
 
 	return nil
-} 
+}

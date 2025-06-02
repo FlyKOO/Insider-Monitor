@@ -37,17 +37,17 @@ func main() {
 	cfg, err := config.LoadConfig(*configPath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			logger.Fatal("Configuration file not found: %v\n\n" +
-				"💡 Quick fix:\n" +
-				"   1. Copy the example: cp config.example.json config.json\n" +
-				"   2. Edit config.json with your settings\n" +
-				"   3. Get a free RPC endpoint from:\n" +
-				"      • Helius: https://helius.dev\n" +
-				"      • QuickNode: https://quicknode.com\n" +
+			logger.Fatal("Configuration file not found: %v\n\n"+
+				"💡 Quick fix:\n"+
+				"   1. Copy the example: cp config.example.json config.json\n"+
+				"   2. Edit config.json with your settings\n"+
+				"   3. Get a free RPC endpoint from:\n"+
+				"      • Helius: https://helius.dev\n"+
+				"      • QuickNode: https://quicknode.com\n"+
 				"      • Triton: https://triton.one", err)
 		}
-		logger.Fatal("Failed to load config: %v\n\n" +
-			"💡 Check that your config.json file has valid JSON syntax.\n" +
+		logger.Fatal("Failed to load config: %v\n\n"+
+			"💡 Check that your config.json file has valid JSON syntax.\n"+
 			"   You can validate it at https://jsonlint.com/", err)
 	}
 
@@ -58,11 +58,11 @@ func main() {
 	// Initialize scanner
 	scanner, err := monitor.NewWalletMonitor(cfg.NetworkURL, cfg.Wallets, &cfg.Scan)
 	if err != nil {
-		logger.Fatal("Failed to create wallet monitor: %v\n\n" +
-			"💡 This usually means:\n" +
-			"   • Invalid wallet address format in config.json\n" +
-			"   • Network connectivity issues\n" +
-			"   • RPC endpoint problems\n\n" +
+		logger.Fatal("Failed to create wallet monitor: %v\n\n"+
+			"💡 This usually means:\n"+
+			"   • Invalid wallet address format in config.json\n"+
+			"   • Network connectivity issues\n"+
+			"   • RPC endpoint problems\n\n"+
 			"   Verify your wallet addresses are valid Solana addresses.", err)
 	}
 
