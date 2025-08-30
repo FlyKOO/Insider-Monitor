@@ -57,8 +57,9 @@ func runWorker(ctx context.Context, q Queue, h Handler) {
         } else { ack() }
     }
 }
-- **Exactly-once**: store processed signature hashes and check before emit.
-
+- **Exactly-once**: store processed (tx_sig, slot, commitment='finalized') with TTL (e.g., 90d).
+  Keep a small rollback journal keyed by slot to revert on reorg detection; do not mark
+  pre-finalized as processed to avoid suppressing the finalized repeat.
 ### Data Modeling
 - **Schema**:
   - `wallets(id PK, address UNIQUE, labels JSONB)`
