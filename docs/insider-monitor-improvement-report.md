@@ -45,18 +45,18 @@ flowchart TD
 - **Improvement**: combine `logsSubscribe` and `blockSubscribe` for near
   real‑time updates plus a backfill worker using `getSignaturesForAddress`.
 - **Ingestion Worker Retry Logic**:
-```go
 func runWorker(ctx context.Context, q Queue, h Handler) {
     for {
         task, ack := q.Pop(ctx)
         if err := h.Process(ctx, task); err != nil {
-            q.Nack(task, backoff.For(task.Attempts))
-        } else {
-            ack()
-        }
+            if task.Attempts >= maxAttempts {
+                q.DeadLetter(task, err)
+            } else {
+                q.Nack(task, backoff.For(task.Attempts))
+            }
+        } else { ack() }
     }
 }
-```
 - **Exactly-once**: store processed signature hashes and check before emit.
 
 ### Data Modeling
