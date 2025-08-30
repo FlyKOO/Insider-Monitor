@@ -8,7 +8,9 @@
     "effort_score": 5,
     "deps": [],
     "risk": "connection churn",
-    "success_metrics": "<5s latency to alert",
+    "success_metrics": [
+      {"metric": "alert_latency_p95", "target": 5, "unit": "s"}
+    ],
     "owner": null,
     "milestone": "30d"
   },
