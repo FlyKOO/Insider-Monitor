@@ -76,12 +76,12 @@ func runWorker(ctx context.Context, q Queue, h Handler) {
   - wallets(address UNIQUE), mints(address UNIQUE)
   - BRIN(slot) on each daily partition
 ## Reliability/Sec/Compliance
-- Secrets stored in `config.json`; no env vars or vault support.
+- Secrets must not live in `config.json`. Use env/secret manager (e.g., 1Password/Vault/GitHub Secrets).
+- Add secret scanning (gitleaks/trufflehog) in CI and pre-commit; block on findings.
 - No handling for chain reorgs or duplicate transactions.
 - A single malformed record could halt scanning (no poison-pill isolation).
 - Retention policy undefined; GDPR/PII considerations absent.
-- No explicit audit logging or tamper‑proof storage.
-
+- No explicit audit logging or tamper-proof storage.
 ## New Features (non-UI)
 ### 1. WebSocket Streaming Ingestion
 - **Why**: Reduce latency and load by subscribing to token account changes.
