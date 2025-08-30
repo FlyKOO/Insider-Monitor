@@ -65,13 +65,16 @@ func runWorker(ctx context.Context, q Queue, h Handler) {
   - `wallets(id PK, address UNIQUE, labels JSONB)`
   - `programs(id PK, address UNIQUE, deployer FK wallets)`
   - `mints(id PK, address UNIQUE, authority FK wallets, decimals, token2022)`
-  - `transfers(id PK, tx_sig UNIQUE, slot, source FK wallets, dest FK wallets,
-    mint FK mints, amount, usd_value)`
+  - `transfers(id PK, tx_sig UNIQUE NOT NULL, slot BIGINT NOT NULL,
+    source FK wallets NOT NULL, dest FK wallets NOT NULL,
+    mint FK mints NOT NULL, amount NUMERIC NOT NULL, usd_value NUMERIC)`
   - `lp_events(id PK, program FK programs, pool, action, amount, slot)`
-  - `labels(id PK, source, label, address FK wallets, ttl)`
-- **Indexes**: `(slot DESC)` on transfers, `(address)` on wallets/mints,
-  time‑partitioned tables per day for transfers and lp_events.
-
+  - `labels(id PK, source TEXT NOT NULL, label TEXT NOT NULL, address FK wallets NOT NULL, ttl INTERVAL)`
+- **Indexes**:
+  - transfers: (slot DESC), (source, slot DESC), (dest, slot DESC),
+    PARTIAL INDEX on (mint, slot DESC) WHERE slot > now() - interval '30 days'
+  - wallets(address UNIQUE), mints(address UNIQUE)
+  - BRIN(slot) on each daily partition
 ## Reliability/Sec/Compliance
 - Secrets stored in `config.json`; no env vars or vault support.
 - No handling for chain reorgs or duplicate transactions.
