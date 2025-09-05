@@ -7,11 +7,11 @@ import (
 	"github.com/accursedgalaxy/insider-monitor/internal/utils"
 )
 
-// ConsoleAlerter implements basic console logging
+// ConsoleAlerter 实现基础的控制台日志输出
 type ConsoleAlerter struct{}
 
 func (a *ConsoleAlerter) SendAlert(alert Alert) error {
-	// Use colors based on alert level
+	// 根据告警级别使用不同颜色
 	var color, symbol string
 	switch alert.Level {
 	case Critical:
@@ -25,10 +25,10 @@ func (a *ConsoleAlerter) SendAlert(alert Alert) error {
 		symbol = "🟢"
 	}
 
-	// Format the timestamp
+	// 格式化时间戳
 	timestamp := alert.Timestamp.Format("15:04:05")
 
-	// Format alert type
+	// 格式化告警类型
 	alertType := strings.ToUpper(alert.AlertType)
 	if alertType == "BALANCE_CHANGE" {
 		alertType = "BALANCE CHANGE"
@@ -38,12 +38,12 @@ func (a *ConsoleAlerter) SendAlert(alert Alert) error {
 		alertType = "NEW WALLET"
 	}
 
-	// Draw a box around the alert
+	// 为告警绘制框线
 	width := 80
 	topBorder := fmt.Sprintf("%s%s%s", color, strings.Repeat("━", width), utils.ColorReset)
 	bottomBorder := topBorder
 
-	// Print alert header
+	// 输出告警头部
 	fmt.Println(topBorder)
 	fmt.Printf("%s%s [%s] %s ALERT - %s %s\n",
 		color,
@@ -53,7 +53,7 @@ func (a *ConsoleAlerter) SendAlert(alert Alert) error {
 		utils.ColorBold,
 		utils.ColorReset)
 
-	// Print alert details
+	// 输出告警详情
 	shortWallet := alert.WalletAddress
 	if len(shortWallet) > 20 {
 		shortWallet = shortWallet[:8] + "..." + shortWallet[len(shortWallet)-8:]
@@ -61,13 +61,13 @@ func (a *ConsoleAlerter) SendAlert(alert Alert) error {
 
 	fmt.Printf("Wallet: %s%s%s\n", utils.ColorBold, shortWallet, utils.ColorReset)
 
-	// Format message content
+	// 格式化消息内容
 	lines := strings.Split(alert.Message, "\n")
 	for _, line := range lines {
 		fmt.Println(line)
 	}
 
-	// Print any additional data if relevant
+	// 如有相关的附加数据则输出
 	if data, ok := alert.Data["change_percent"]; ok {
 		if pct, ok := data.(float64); ok {
 			direction := "↑"

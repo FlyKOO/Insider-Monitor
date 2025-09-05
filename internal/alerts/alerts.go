@@ -19,11 +19,11 @@ type Alert struct {
 	AlertType     string
 	Message       string
 	Level         AlertLevel
-	Data          map[string]interface{} // Additional data for formatting
+	Data          map[string]interface{} // 用于格式化的附加数据
 }
 
 type Alerter interface {
 	SendAlert(alert Alert) error
 }
 
-// ConsoleAlerter implementation moved to console.go
+// ConsoleAlerter 的实现已移动至 console.go

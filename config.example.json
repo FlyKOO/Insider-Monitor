@@ -1,6 +1,6 @@
 {
-    "_comment": "⚠️ IMPORTANT: Replace the network_url below with your dedicated RPC endpoint!",
-    "_comment_rpc": "Get a free RPC from: Helius (helius.dev), QuickNode (quicknode.com), or Triton (triton.one)",
+    "_comment": "⚠️ 重要：请将下方的 network_url 替换为你的专用 RPC 节点！",
+    "_comment_rpc": "可从以下获取免费 RPC：Helius (helius.dev)、QuickNode (quicknode.com) 或 Triton (triton.one)",
     "network_url": "YOUR_DEDICATED_RPC_URL_HERE",
     "wallets": [
         "CvQk2xkXtiMj2JqqVx1YZkeSqQ7jyQkNqqjeNE1jPTfc",

@@ -18,7 +18,7 @@ func TestNewWalletMonitor(t *testing.T) {
 			name:       "Valid initialization",
 			networkURL: "https://api.mainnet-beta.solana.com",
 			wallets: []string{
-				"DYw8jCTfwHNRJhhmFcbXvVDTqWMEVFBX6ZKUmG5CNSKK", // Example valid wallet
+				"DYw8jCTfwHNRJhhmFcbXvVDTqWMEVFBX6ZKUmG5CNSKK", // 示例有效钱包
 			},
 			shouldError: false,
 		},

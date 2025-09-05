@@ -16,24 +16,24 @@ import (
 	"github.com/accursedgalaxy/insider-monitor/internal/utils"
 )
 
-// WalletScanner interface defines the contract for wallet monitoring
+// WalletScanner 接口定义了钱包监控的约定
 type WalletScanner interface {
 	ScanAllWallets() (map[string]*monitor.WalletData, error)
 	DisplayWalletOverview(walletDataMap map[string]*monitor.WalletData)
 }
 
 func main() {
-	// Create our custom logger
+	// 创建自定义日志记录器
 	logger := utils.NewLogger(false)
 
 	configPath := flag.String("config", "config.json", "Path to configuration file")
 	flag.Parse()
 
-	// Print welcome message
+	// 打印欢迎信息
 	fmt.Printf("\n%s%s SOLANA INSIDER MONITOR %s\n", utils.ColorBold, utils.ColorPurple, utils.ColorReset)
 	fmt.Printf("%s━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━%s\n\n", utils.ColorPurple, utils.ColorReset)
 
-	// Load configuration
+	// 加载配置
 	cfg, err := config.LoadConfig(*configPath)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -55,7 +55,7 @@ func main() {
 		logger.Fatal("Configuration validation failed:\n%v", err)
 	}
 
-	// Initialize scanner
+	// 初始化扫描器
 	scanner, err := monitor.NewWalletMonitor(cfg.NetworkURL, cfg.Wallets, &cfg.Scan)
 	if err != nil {
 		logger.Fatal("Failed to create wallet monitor: %v\n\n"+
@@ -66,7 +66,7 @@ func main() {
 			"   Verify your wallet addresses are valid Solana addresses.", err)
 	}
 
-	// Initialize alerter
+	// 初始化告警器
 	var alerter alerts.Alerter
 	if cfg.Discord.Enabled {
 		alerter = alerts.NewDiscordAlerter(cfg.Discord.WebhookURL, cfg.Discord.ChannelID)
@@ -76,7 +76,7 @@ func main() {
 		logger.Config("Console alerts enabled")
 	}
 
-	// Parse scan interval
+	// 解析扫描间隔
 	scanInterval, err := time.ParseDuration(cfg.ScanInterval)
 	if err != nil {
 		logger.Warning("Invalid scan interval '%s', using default of 1 minute", cfg.ScanInterval)
@@ -89,19 +89,19 @@ func main() {
 func runMonitor(scanner WalletScanner, alerter alerts.Alerter, cfg *config.Config, scanInterval time.Duration, logger *utils.Logger) {
 	storage := storage.New("./data")
 
-	// Create buffered channels for graceful shutdown
+	// 创建缓冲通道以便优雅关闭
 	interrupt := make(chan os.Signal, 1)
 	done := make(chan bool, 1)
 	signal.Notify(interrupt, os.Interrupt, syscall.SIGTERM)
 
-	// Track connection state
+	// 跟踪连接状态
 	var lastSuccessfulScan time.Time
 	var connectionLost bool
 
-	// Define maximum allowed time between successful scans
+	// 定义成功扫描之间允许的最大时间
 	maxTimeBetweenScans := scanInterval * 3
 
-	// Initialize previousData from storage at startup
+	// 在启动时从存储初始化 previousData
 	var previousData map[string]*monitor.WalletData
 	if savedData, err := storage.LoadWalletData(); err == nil {
 		previousData = savedData
@@ -111,7 +111,7 @@ func runMonitor(scanner WalletScanner, alerter alerts.Alerter, cfg *config.Confi
 		previousData = make(map[string]*monitor.WalletData)
 	}
 
-	// Perform initial scan immediately
+	// 立即执行初始扫描
 	logger.Scan("Performing initial wallet scan...")
 	initialResults, err := scanner.ScanAllWallets()
 	if err != nil {
@@ -131,7 +131,7 @@ func runMonitor(scanner WalletScanner, alerter alerts.Alerter, cfg *config.Confi
 		scanner.DisplayWalletOverview(initialResults)
 	}
 
-	// Start monitoring in a separate goroutine
+	// 在单独的 goroutine 中开始监控
 	go func() {
 		ticker := time.NewTicker(scanInterval)
 		defer ticker.Stop()
@@ -141,7 +141,7 @@ func runMonitor(scanner WalletScanner, alerter alerts.Alerter, cfg *config.Confi
 		for {
 			select {
 			case <-ticker.C:
-				// Check if we've exceeded the maximum time between scans
+				// 检查是否超过了扫描之间的最大允许时间
 				if time.Since(lastSuccessfulScan) > maxTimeBetweenScans && !connectionLost {
 					connectionLost = true
 					logger.Warning("No successful scan in %v, marking connection as lost", maxTimeBetweenScans)
@@ -158,7 +158,7 @@ func runMonitor(scanner WalletScanner, alerter alerts.Alerter, cfg *config.Confi
 					continue
 				}
 
-				// Connection restored check
+				// 检查连接是否已恢复
 				if connectionLost {
 					connectionLost = false
 					logger.Network("Connection restored, loading previous data to prevent false alerts")
@@ -169,25 +169,25 @@ func runMonitor(scanner WalletScanner, alerter alerts.Alerter, cfg *config.Confi
 					continue
 				}
 
-				// Update last successful scan time
+				// 更新上次成功扫描时间
 				lastSuccessfulScan = time.Now()
 
-				// Process changes only if we have previous data
+				// 仅在存在历史数据时处理变化
 				if len(previousData) > 0 {
 					changes := monitor.DetectChanges(previousData, newResults, cfg.Alerts.SignificantChange)
 					processChanges(changes, alerter, cfg.Alerts, logger)
 				} else {
-					// First scan, just store the data without generating alerts
+					// 第一次扫描，仅存储数据而不生成告警
 					logger.Info("Initial scan completed, storing baseline data")
 				}
 
-				// Save new results
+				// 保存新的结果
 				if err := storage.SaveWalletData(newResults); err != nil {
 					logger.Error("Error saving data: %v", err)
 				}
 				previousData = newResults
 
-				// Display wallet overview
+				// 展示钱包概览
 				scanner.DisplayWalletOverview(newResults)
 
 			case <-done:
@@ -197,14 +197,14 @@ func runMonitor(scanner WalletScanner, alerter alerts.Alerter, cfg *config.Confi
 		}
 	}()
 
-	// Wait for interrupt signal
+	// 等待中断信号
 	<-interrupt
 	logger.Info("Shutting down gracefully...")
 	if err := monitor.LogToFile("./data", "Monitor shutting down gracefully"); err != nil {
 		logger.Error("Failed to write shutdown log: %v", err)
 	}
 	done <- true
-	time.Sleep(time.Second) // Give a moment for final cleanup
+	time.Sleep(time.Second) // 留出一点时间用于最后清理
 }
 
 func processChanges(changes []monitor.Change, alerter alerts.Alerter, alertCfg config.AlertConfig, logger *utils.Logger) {
@@ -215,14 +215,14 @@ func processChanges(changes []monitor.Change, alerter alerts.Alerter, alertCfg c
 
 		switch change.ChangeType {
 		case "new_wallet":
-			// Create a consolidated message for all tokens
+			// 为所有代币创建汇总消息
 			var tokenDetails []string
 			tokenData := make(map[string]uint64)
 			tokenDecimals := make(map[string]uint8)
 			for mint, balance := range change.TokenBalances {
 				tokenDetails = append(tokenDetails, fmt.Sprintf("%s: %d", mint, balance))
 				tokenData[mint] = balance
-				tokenDecimals[mint] = 9 // Default decimals, adjust if you have actual decimals
+				tokenDecimals[mint] = 9 // 默认小数位；如有实际小数位请调整
 			}
 			msg = fmt.Sprintf("New wallet %s detected with %d tokens:\n%s",
 				change.WalletAddress,
