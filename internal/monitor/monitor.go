@@ -33,7 +33,7 @@ func NewWalletMonitor(networkURL string, wallets []string, scanConfig *config.Sc
 		1,
 	))
 
-	// Convert wallet addresses to PublicKeys
+	// 将钱包地址转换为 PublicKey
 	pubKeys := make([]solana.PublicKey, len(wallets))
 	for i, addr := range wallets {
 		pubKey, err := solana.PublicKeyFromBase58(addr)
@@ -52,7 +52,7 @@ func NewWalletMonitor(networkURL string, wallets []string, scanConfig *config.Sc
 	}, nil
 }
 
-// Simplified TokenAccountInfo
+// 简化的 TokenAccountInfo
 type TokenAccountInfo struct {
 	Balance         uint64    `json:"balance"`
 	LastUpdated     time.Time `json:"last_updated"`
@@ -63,14 +63,14 @@ type TokenAccountInfo struct {
 	ConfidenceLevel string    `json:"confidence_level"`
 }
 
-// Simplified WalletData
+// 简化的 WalletData
 type WalletData struct {
 	WalletAddress string                      `json:"wallet_address"`
-	TokenAccounts map[string]TokenAccountInfo `json:"token_accounts"` // mint -> info
+	TokenAccounts map[string]TokenAccountInfo `json:"token_accounts"` // mint -> 信息
 	LastScanned   time.Time                   `json:"last_scanned"`
 }
 
-// Add these constants for retry configuration
+// 以下常量用于重试配置
 const (
 	maxRetries     = 5
 	initialBackoff = 5 * time.Second
@@ -102,7 +102,7 @@ func (w *WalletMonitor) getTokenAccountsWithRetry(wallet solana.PublicKey) (*rpc
 			log.Printf("⚠️  Rate limited on attempt %d for wallet %s, waiting %v before retry",
 				attempt+1, wallet.String(), backoff)
 
-			// Show helpful message on first rate limit
+			// 在首次触发速率限制时显示提示信息
 			if attempt == 0 {
 				log.Printf("💡 Rate limit detected. This usually happens when using public RPC endpoints.")
 				log.Printf("   Consider upgrading to a dedicated RPC provider:")
@@ -113,7 +113,7 @@ func (w *WalletMonitor) getTokenAccountsWithRetry(wallet solana.PublicKey) (*rpc
 
 			time.Sleep(backoff)
 
-			// Exponential backoff with max
+			// 指数回退并设置最大值
 			backoff *= 2
 			if backoff > maxBackoff {
 				backoff = maxBackoff
@@ -121,7 +121,7 @@ func (w *WalletMonitor) getTokenAccountsWithRetry(wallet solana.PublicKey) (*rpc
 			continue
 		}
 
-		// Handle other common errors with helpful messages
+		// 处理其他常见错误并提供提示
 		if strings.Contains(err.Error(), "connection") || strings.Contains(err.Error(), "timeout") {
 			return nil, fmt.Errorf("connection error: %w\n\n"+
 				"💡 This might be due to:\n"+
@@ -130,7 +130,7 @@ func (w *WalletMonitor) getTokenAccountsWithRetry(wallet solana.PublicKey) (*rpc
 				"   • Try a different RPC provider from the list above", err)
 		}
 
-		// If it's not a rate limit or connection error, return immediately
+		// 若不是速率限制或连接错误，则立即返回
 		return nil, fmt.Errorf("RPC request failed: %w\n\n"+
 			"💡 If this error persists, try:\n"+
 			"   • Check your RPC endpoint URL in config.json\n"+
@@ -138,7 +138,7 @@ func (w *WalletMonitor) getTokenAccountsWithRetry(wallet solana.PublicKey) (*rpc
 			"   • Consider switching to a more reliable RPC provider", err)
 	}
 
-	// Enhanced final error message with actionable suggestions
+	// 提供带有解决方案的增强错误信息
 	if strings.Contains(lastErr.Error(), "429") || strings.Contains(lastErr.Error(), "Too Many Requests") {
 		return nil, fmt.Errorf("❌ Rate limit exceeded after %d retries\n\n"+
 			"🔧 SOLUTION: You're likely using a public RPC endpoint with strict limits.\n"+
@@ -157,15 +157,15 @@ func (w *WalletMonitor) getTokenAccountsWithRetry(wallet solana.PublicKey) (*rpc
 	return nil, fmt.Errorf("failed after %d retries: %w", maxRetries, lastErr)
 }
 
-// shouldIncludeToken determines if a token should be included based on scan configuration
+// shouldIncludeToken 根据扫描配置判断是否包含某个代币
 func (w *WalletMonitor) shouldIncludeToken(mint string) bool {
 	if w.scanConfig == nil {
-		return true // If no scan config, include everything
+		return true // 若无扫描配置，则包含全部
 	}
 
 	switch w.scanConfig.ScanMode {
 	case "whitelist":
-		// Only include tokens in the IncludeTokens list
+		// 仅包含 IncludeTokens 列表中的代币
 		for _, token := range w.scanConfig.IncludeTokens {
 			if strings.EqualFold(token, mint) {
 				return true
@@ -174,7 +174,7 @@ func (w *WalletMonitor) shouldIncludeToken(mint string) bool {
 		return false
 
 	case "blacklist":
-		// Include all tokens except those in ExcludeTokens list
+		// 包含所有代币，但排除 ExcludeTokens 列表中的
 		for _, token := range w.scanConfig.ExcludeTokens {
 			if strings.EqualFold(token, mint) {
 				return false
@@ -182,7 +182,7 @@ func (w *WalletMonitor) shouldIncludeToken(mint string) bool {
 		}
 		return true
 
-	default: // "all" or any other value
+	default: // "all" 或其他值
 		return true
 	}
 }
@@ -194,13 +194,13 @@ func (w *WalletMonitor) GetWalletData(wallet solana.PublicKey) (*WalletData, err
 		LastScanned:   time.Now(),
 	}
 
-	// Use the retry version instead
+	// 使用带重试的版本
 	accounts, err := w.getTokenAccountsWithRetry(wallet)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get token accounts for wallet %s: %w", wallet.String(), err)
 	}
 
-	// Process token accounts
+	// 处理代币账户
 	for _, acc := range accounts.Value {
 		var tokenAccount token.Account
 		err = bin.NewBinDecoder(acc.Account.Data.GetBinary()).Decode(&tokenAccount)
@@ -209,7 +209,7 @@ func (w *WalletMonitor) GetWalletData(wallet solana.PublicKey) (*WalletData, err
 			continue
 		}
 
-		// Only include accounts with positive balance and that pass the filter
+		// 仅包含余额为正且通过筛选的账户
 		if tokenAccount.Amount > 0 {
 			mint := tokenAccount.Mint.String()
 			if w.shouldIncludeToken(mint) {
@@ -227,12 +227,12 @@ func (w *WalletMonitor) GetWalletData(wallet solana.PublicKey) (*WalletData, err
 	return walletData, nil
 }
 
-// Add these type definitions
+// 添加以下类型定义
 type Change struct {
 	WalletAddress string
 	TokenMint     string
-	TokenSymbol   string // Add symbol
-	TokenDecimals uint8  // Add decimals
+	TokenSymbol   string // 代币符号
+	TokenDecimals uint8  // 代币小数位
 	ChangeType    string
 	OldBalance    uint64
 	NewBalance    uint64
@@ -242,23 +242,23 @@ type Change struct {
 
 func calculatePercentageChange(old, new uint64) float64 {
 	if old == 0 {
-		return 100.0 // Return 100% for new additions
+		return 100.0 // 对于新增代币返回 100%
 	}
 
-	// Convert to float64 before division to maintain precision
+	// 在除法前转换为 float64 以保持精度
 	oldFloat := float64(old)
 	newFloat := float64(new)
 
-	// Calculate percentage change
+	// 计算百分比变化
 	change := ((newFloat - oldFloat) / oldFloat) * 100.0
 
-	// Round to 2 decimal places to avoid floating point precision issues
+	// 四舍五入保留两位小数以避免浮点精度问题
 	change = float64(int64(change*100)) / 100
 
 	return change
 }
 
-// Utility function for absolute values
+// 计算绝对值的辅助函数
 func abs(x float64) float64 {
 	if x < 0 {
 		return -x
@@ -267,7 +267,7 @@ func abs(x float64) float64 {
 }
 
 func (w *WalletMonitor) checkConnection() error {
-	// Try to get slot number as a simple connection test
+	// 尝试获取 slot 号作为简单的连接测试
 	_, err := w.client.GetSlot(context.Background(), rpc.CommitmentFinalized)
 	w.isConnected = err == nil
 
@@ -289,9 +289,9 @@ func (w *WalletMonitor) checkConnection() error {
 	return nil
 }
 
-// Update ScanAllWallets to handle batches
+// 更新 ScanAllWallets 以处理批量
 func (w *WalletMonitor) ScanAllWallets() (map[string]*WalletData, error) {
-	// Check connection first
+	// 先检查连接
 	if err := w.checkConnection(); err != nil {
 		return nil, err
 	}
@@ -307,18 +307,18 @@ func (w *WalletMonitor) ScanAllWallets() (map[string]*WalletData, error) {
 
 		log.Printf("📊 Processing wallets %d-%d of %d", i+1, end, len(w.wallets))
 
-		// Process batch
+		// 处理一批钱包
 		for _, wallet := range w.wallets[i:end] {
 			data, err := w.GetWalletData(wallet)
 			if err != nil {
 				log.Printf("❌ Error scanning wallet %s: %v", wallet.String(), err)
-				// Return the error to propagate the enhanced error messages
+				// 返回错误以传递增强的错误信息
 				return nil, fmt.Errorf("failed to scan wallet %s: %w", wallet.String(), err)
 			}
 			results[wallet.String()] = data
 		}
 
-		// Small delay between batches to be nice to the RPC
+		// 批次之间短暂延迟以照顾 RPC
 		if end < len(w.wallets) {
 			time.Sleep(500 * time.Millisecond)
 		}
@@ -330,20 +330,20 @@ func (w *WalletMonitor) ScanAllWallets() (map[string]*WalletData, error) {
 func DetectChanges(oldData, newData map[string]*WalletData, significantChange float64) []Change {
 	var changes []Change
 
-	// Check for changes in existing wallets
+	// 检查现有钱包的变化
 	for walletAddr, newWalletData := range newData {
 		oldWalletData, existed := oldData[walletAddr]
 
 		if !existed {
-			continue // Skip new wallet detection for now
+			continue // 暂时跳过新钱包检测
 		}
 
-		// Check for changes in existing wallet
+		// 检查现有钱包的变化
 		for mint, newInfo := range newWalletData.TokenAccounts {
 			oldInfo, existed := oldWalletData.TokenAccounts[mint]
 
 			if !existed {
-				// New token detected
+				// 检测到新代币
 				changes = append(changes, Change{
 					WalletAddress: walletAddr,
 					TokenMint:     mint,
@@ -355,7 +355,7 @@ func DetectChanges(oldData, newData map[string]*WalletData, significantChange fl
 				continue
 			}
 
-			// Check for significant balance changes
+			// 检查显著的余额变化
 			pctChange := calculatePercentageChange(oldInfo.Balance, newInfo.Balance)
 			absChange := abs(pctChange)
 
@@ -377,17 +377,17 @@ func DetectChanges(oldData, newData map[string]*WalletData, significantChange fl
 	return changes
 }
 
-// Add this helper function
+// 添加此辅助函数
 func formatTokenAmount(amount uint64, decimals uint8) string {
 	if decimals == 0 {
 		return fmt.Sprintf("%d", amount)
 	}
 
-	// Convert to float64 and divide by 10^decimals
+	// 转换为 float64 并除以 10^decimals
 	divisor := math.Pow(10, float64(decimals))
 	value := float64(amount) / divisor
 
-	// Format with appropriate decimal places based on size
+	// 根据数值大小格式化小数位
 	switch {
 	case value >= 5000:
 		return fmt.Sprintf("%.2fM", value/1000)
@@ -398,7 +398,7 @@ func formatTokenAmount(amount uint64, decimals uint8) string {
 	}
 }
 
-// FormatWalletOverview returns a compact string representation of wallet holdings
+// FormatWalletOverview 返回钱包持仓的简洁表示
 func FormatWalletOverview(data map[string]*WalletData) string {
 	var overview strings.Builder
 	overview.WriteString("\nWallet Holdings Overview:\n")
@@ -411,7 +411,7 @@ func FormatWalletOverview(data map[string]*WalletData) string {
 			continue
 		}
 
-		// Convert map to slice for sorting
+		// 将映射转换为切片以便排序
 		type tokenHolding struct {
 			symbol   string
 			balance  uint64
@@ -426,12 +426,12 @@ func FormatWalletOverview(data map[string]*WalletData) string {
 			})
 		}
 
-		// Sort by balance (highest first)
+		// 按余额排序（从高到低）
 		sort.Slice(holdings, func(i, j int) bool {
 			return holdings[i].balance > holdings[j].balance
 		})
 
-		// Show top 5 holdings
+		// 显示前五大持仓
 		maxDisplay := 5
 		if len(holdings) < maxDisplay {
 			maxDisplay = len(holdings)
@@ -441,7 +441,7 @@ func FormatWalletOverview(data map[string]*WalletData) string {
 			overview.WriteString(fmt.Sprintf("   • %s: %s\n", holdings[i].symbol, balance))
 		}
 
-		// Show how many more tokens if any
+		// 如有更多代币则显示数量
 		remaining := len(holdings) - maxDisplay
 		if remaining > 0 {
 			overview.WriteString(fmt.Sprintf("   ... and %d more tokens\n", remaining))
@@ -451,7 +451,7 @@ func FormatWalletOverview(data map[string]*WalletData) string {
 	return overview.String()
 }
 
-// Update FormatWalletOverview to include confidence indicators
+// 更新 FormatWalletOverview 以包含置信度指示器
 func formatTokenValue(value float64, confidence string) string {
 	var indicator string
 	switch strings.ToLower(confidence) {
@@ -471,7 +471,7 @@ func formatTokenValue(value float64, confidence string) string {
 	return fmt.Sprintf(" ($%.2f) %s", value, indicator)
 }
 
-// Add a struct to hold token data with USD value
+// 添加结构体以存储带有美元价值的代币数据
 type tokenHolding struct {
 	Mint     string
 	Amount   float64
@@ -479,9 +479,9 @@ type tokenHolding struct {
 	Symbol   string
 }
 
-// Update the DisplayWalletOverview function to create a more attractive output
+// 更新 DisplayWalletOverview 函数以提供更美观的输出
 func (m *WalletMonitor) DisplayWalletOverview(walletDataMap map[string]*WalletData) {
-	// Terminal color codes
+	// 终端颜色代码
 	const (
 		colorReset  = "\033[0m"
 		colorRed    = "\033[31m"
@@ -494,7 +494,7 @@ func (m *WalletMonitor) DisplayWalletOverview(walletDataMap map[string]*WalletDa
 		colorBold   = "\033[1m"
 	)
 
-	// Symbols
+	// 符号
 	const (
 		walletSymbol = "💼"
 		tokenSymbol  = "🔹"
@@ -507,7 +507,7 @@ func (m *WalletMonitor) DisplayWalletOverview(walletDataMap map[string]*WalletDa
 	fmt.Printf("%s%s SOLANA WALLET MONITOR %s\n", colorBold, colorPurple, colorReset)
 	fmt.Printf("%s%s %s\n\n", colorPurple, divider, colorReset)
 
-	// Collect all unique mints
+	// 收集所有唯一的铸币地址
 	mints := make([]string, 0)
 	for _, walletData := range walletDataMap {
 		for mint := range walletData.TokenAccounts {
@@ -515,12 +515,12 @@ func (m *WalletMonitor) DisplayWalletOverview(walletDataMap map[string]*WalletDa
 		}
 	}
 
-	// Update prices for all tokens
+	// 更新所有代币的价格
 	if err := m.priceService.UpdatePrices(mints); err != nil {
 		log.Printf("Error updating prices: %v", err)
 	}
 
-	// Total value counter
+	// 总价值计数器
 	totalPortfolioValue := 0.0
 
 	for _, wallet := range m.wallets {
@@ -531,23 +531,23 @@ func (m *WalletMonitor) DisplayWalletOverview(walletDataMap map[string]*WalletDa
 			continue
 		}
 
-		// Convert token holdings to slice for sorting
+		// 将代币持仓转换为切片以便排序
 		holdings := make([]tokenHolding, 0)
 		walletTotalValue := 0.0
 
 		for mint, info := range walletData.TokenAccounts {
-			// Get price data from Jupiter
+			// 从 Jupiter 获取价格数据
 			priceData, exists := m.priceService.GetPrice(mint)
 
 			usdValue := 0.0
 			if exists {
-				// Convert balance to float considering decimals
+				// 考虑小数位将余额转换为浮点数
 				actualAmount := float64(info.Balance) / math.Pow(10, float64(info.Decimals))
 				usdValue = actualAmount * priceData.Price
 				walletTotalValue += usdValue
 			}
 
-			// Try to look up well-known token addresses to get better names
+			// 尝试查找常见代币地址以获得更好的名称
 			symbol := info.Symbol
 			if tokenName, found := getKnownTokenName(mint); found {
 				symbol = tokenName
@@ -563,14 +563,14 @@ func (m *WalletMonitor) DisplayWalletOverview(walletDataMap map[string]*WalletDa
 
 		totalPortfolioValue += walletTotalValue
 
-		// Sort by USD value descending
+		// 按美元价值降序排序
 		sort.Slice(holdings, func(i, j int) bool {
 			return holdings[i].USDValue > holdings[j].USDValue
 		})
 
-		// Show wallet total
+		// 显示钱包总价值
 		if walletTotalValue > 0 {
-			// Format based on size
+			// 根据数值大小格式化
 			valueStr := ""
 			if walletTotalValue >= 1000000 {
 				valueStr = fmt.Sprintf("$%.2fM", walletTotalValue/1000000)
@@ -582,21 +582,21 @@ func (m *WalletMonitor) DisplayWalletOverview(walletDataMap map[string]*WalletDa
 			fmt.Printf("   %s%sTotal Value: %s%s\n", colorBold, colorGreen, valueStr, colorReset)
 		}
 
-		// Display top 5 holdings with better formatting
+		// 以更好的格式显示前五大持仓
 		for i := 0; i < min(5, len(holdings)); i++ {
 			holding := holdings[i]
 
-			// Get short mint or symbol for display
+			// 获取用于展示的缩写或符号
 			displayName := holding.Symbol
 			if displayName == holding.Mint[:8]+"..." {
-				// If it's still just the short mint, check for known tokens
+				// 如果仍然只是缩写，则检查是否为常见代币
 				if tokenName, found := getKnownTokenName(holding.Mint); found {
 					displayName = tokenName
 				}
 			}
 
-			// Format amount
-			actualAmount := holding.Amount / math.Pow(10, float64(9)) // assuming 9 decimals
+			// 格式化数量
+			actualAmount := holding.Amount / math.Pow(10, float64(9)) // 假设 9 位小数
 			amountStr := ""
 			if actualAmount >= 1000000 {
 				amountStr = fmt.Sprintf("%.2fM", actualAmount/1000000)
@@ -606,7 +606,7 @@ func (m *WalletMonitor) DisplayWalletOverview(walletDataMap map[string]*WalletDa
 				amountStr = fmt.Sprintf("%.4f", actualAmount)
 			}
 
-			// Choose color based on value
+			// 根据价值选择颜色
 			valueColor := colorWhite
 			if holding.USDValue > 1000 {
 				valueColor = colorGreen
@@ -641,7 +641,7 @@ func (m *WalletMonitor) DisplayWalletOverview(walletDataMap map[string]*WalletDa
 		fmt.Println()
 	}
 
-	// Display total portfolio value
+	// 显示投资组合总价值
 	if totalPortfolioValue > 0 {
 		fmt.Printf("%s%s %s\n", colorPurple, divider, colorReset)
 		if totalPortfolioValue >= 1000000 {
@@ -657,9 +657,9 @@ func (m *WalletMonitor) DisplayWalletOverview(walletDataMap map[string]*WalletDa
 	fmt.Printf("%sLast updated: %s%s\n\n", colorYellow, time.Now().Format("2006-01-02 15:04:05"), colorReset)
 }
 
-// Helper function to lookup well-known token names
+// 查找常见代币名称的辅助函数
 func getKnownTokenName(mint string) (string, bool) {
-	// Map of well-known token mints to symbols
+	// 常见代币铸币地址到符号的映射
 	knownTokens := map[string]string{
 		"So11111111111111111111111111111111111111112":  "SOL",
 		"EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v": "USDC",
@@ -675,7 +675,7 @@ func getKnownTokenName(mint string) (string, bool) {
 	return symbol, found
 }
 
-// Helper function for min
+// 计算最小值的辅助函数
 func min(a, b int) int {
 	if a < b {
 		return a

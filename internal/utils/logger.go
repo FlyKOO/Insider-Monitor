@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-// Terminal color codes
+// 终端颜色代码
 const (
 	ColorReset  = "\033[0m"
 	ColorRed    = "\033[31m"
@@ -20,7 +20,7 @@ const (
 	ColorBold   = "\033[1m"
 )
 
-// Emoji/symbol constants
+// 表情与符号常量
 const (
 	InfoSymbol     = "ℹ️"
 	SuccessSymbol  = "✅"
@@ -37,21 +37,21 @@ const (
 	NewTokenSymbol = "🆕"
 )
 
-// Logger provides colorful terminal logging
+// Logger 提供带颜色的终端日志
 type Logger struct {
 	stdLogger *log.Logger
 	fileOnly  bool
 }
 
-// NewLogger creates a new logger instance
+// NewLogger 创建一个新的日志实例
 func NewLogger(fileOnly bool) *Logger {
 	return &Logger{
-		stdLogger: log.New(os.Stdout, "", 0), // No prefix or flags, we'll handle that
+		stdLogger: log.New(os.Stdout, "", 0), // 无前缀和标志，由我们自行处理
 		fileOnly:  fileOnly,
 	}
 }
 
-// formatLog formats a log message with timestamp, emoji, and color
+// formatLog 按时间戳、表情和颜色格式化日志消息
 func (l *Logger) formatLog(level, symbol, color, msg string) string {
 	timestamp := time.Now().Format("2006/01/02 15:04:05")
 	return fmt.Sprintf("%s %s %s%s%s %s",
@@ -63,18 +63,18 @@ func (l *Logger) formatLog(level, symbol, color, msg string) string {
 		msg)
 }
 
-// Info logs an informational message
+// Info 记录一条信息级别日志
 func (l *Logger) Info(format string, args ...interface{}) {
 	msg := fmt.Sprintf(format, args...)
 	logMsg := l.formatLog("INFO", InfoSymbol, ColorBlue, msg)
 	if !l.fileOnly {
 		l.stdLogger.Println(logMsg)
 	}
-	// Add file logging if needed
+	// 如有需要添加文件日志
 	_ = LogToFile("./data", logMsg)
 }
 
-// Success logs a success message
+// Success 记录一条成功日志
 func (l *Logger) Success(format string, args ...interface{}) {
 	msg := fmt.Sprintf(format, args...)
 	logMsg := l.formatLog("SUCCESS", SuccessSymbol, ColorGreen, msg)
@@ -84,7 +84,7 @@ func (l *Logger) Success(format string, args ...interface{}) {
 	_ = LogToFile("./data", logMsg)
 }
 
-// Warning logs a warning message
+// Warning 记录一条警告日志
 func (l *Logger) Warning(format string, args ...interface{}) {
 	msg := fmt.Sprintf(format, args...)
 	logMsg := l.formatLog("WARNING", WarningSymbol, ColorYellow, msg)
@@ -94,7 +94,7 @@ func (l *Logger) Warning(format string, args ...interface{}) {
 	_ = LogToFile("./data", logMsg)
 }
 
-// Error logs an error message
+// Error 记录一条错误日志
 func (l *Logger) Error(format string, args ...interface{}) {
 	msg := fmt.Sprintf(format, args...)
 	logMsg := l.formatLog("ERROR", ErrorSymbol, ColorRed, msg)
@@ -104,7 +104,7 @@ func (l *Logger) Error(format string, args ...interface{}) {
 	_ = LogToFile("./data", logMsg)
 }
 
-// Network logs a network-related message
+// Network 记录一条网络相关日志
 func (l *Logger) Network(format string, args ...interface{}) {
 	msg := fmt.Sprintf(format, args...)
 	logMsg := l.formatLog("NETWORK", NetworkSymbol, ColorCyan, msg)
@@ -114,7 +114,7 @@ func (l *Logger) Network(format string, args ...interface{}) {
 	_ = LogToFile("./data", logMsg)
 }
 
-// Wallet logs a wallet-related message
+// Wallet 记录一条钱包相关日志
 func (l *Logger) Wallet(format string, args ...interface{}) {
 	msg := fmt.Sprintf(format, args...)
 	logMsg := l.formatLog("WALLET", WalletSymbol, ColorPurple, msg)
@@ -124,7 +124,7 @@ func (l *Logger) Wallet(format string, args ...interface{}) {
 	_ = LogToFile("./data", logMsg)
 }
 
-// Config logs a configuration-related message
+// Config 记录一条配置相关日志
 func (l *Logger) Config(format string, args ...interface{}) {
 	msg := fmt.Sprintf(format, args...)
 	logMsg := l.formatLog("CONFIG", ConfigSymbol, ColorGreen, msg)
@@ -134,7 +134,7 @@ func (l *Logger) Config(format string, args ...interface{}) {
 	_ = LogToFile("./data", logMsg)
 }
 
-// Scan logs a scanning-related message
+// Scan 记录一条扫描相关日志
 func (l *Logger) Scan(format string, args ...interface{}) {
 	msg := fmt.Sprintf(format, args...)
 	logMsg := l.formatLog("SCAN", ScanSymbol, ColorBlue, msg)
@@ -144,7 +144,7 @@ func (l *Logger) Scan(format string, args ...interface{}) {
 	_ = LogToFile("./data", logMsg)
 }
 
-// Storage logs a storage-related message
+// Storage 记录一条存储相关日志
 func (l *Logger) Storage(format string, args ...interface{}) {
 	msg := fmt.Sprintf(format, args...)
 	logMsg := l.formatLog("STORAGE", StorageSymbol, ColorCyan, msg)
@@ -154,7 +154,7 @@ func (l *Logger) Storage(format string, args ...interface{}) {
 	_ = LogToFile("./data", logMsg)
 }
 
-// Fatal logs a fatal error and exits the program
+// Fatal 记录一条致命错误并退出程序
 func (l *Logger) Fatal(format string, args ...interface{}) {
 	msg := fmt.Sprintf(format, args...)
 	logMsg := l.formatLog("FATAL", ErrorSymbol, ColorRed, msg)
@@ -165,24 +165,24 @@ func (l *Logger) Fatal(format string, args ...interface{}) {
 	os.Exit(1)
 }
 
-// LogToFile writes a log message to a file
+// LogToFile 将日志信息写入文件
 func LogToFile(dir string, message string) error {
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return fmt.Errorf("failed to create log directory: %w", err)
 	}
 
-	// Use date for log file name
+	// 使用日期作为日志文件名
 	date := time.Now().Format("2006-01-02")
 	logFile := fmt.Sprintf("%s/insider-monitor-%s.log", dir, date)
 
-	// Open log file in append mode
+	// 以追加模式打开日志文件
 	file, err := os.OpenFile(logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return fmt.Errorf("failed to open log file: %w", err)
 	}
 	defer file.Close()
 
-	// Write log message with timestamp
+	// 写入带时间戳的日志信息
 	_, err = file.WriteString(message + "\n")
 	if err != nil {
 		return fmt.Errorf("failed to write to log file: %w", err)
