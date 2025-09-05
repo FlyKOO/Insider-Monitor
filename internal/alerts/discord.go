@@ -27,7 +27,7 @@ type discordMessage struct {
 type embed struct {
 	Title       string  `json:"title"`
 	Description string  `json:"description"`
-	Color       int     `json:"color"` // Color code
+	Color       int     `json:"color"` // 颜色代码
 	Fields      []field `json:"fields,omitempty"`
 }
 
@@ -45,15 +45,15 @@ func NewDiscordAlerter(webhookURL, channelID string) *DiscordAlerter {
 }
 
 func (d *DiscordAlerter) SendAlert(alert Alert) error {
-	color := 0x7289DA // Default Discord blue
+	color := 0x7289DA // Discord 默认蓝色
 	switch alert.Level {
 	case Critical:
-		color = 0xFF0000 // Red
+		color = 0xFF0000 // 红色
 	case Warning:
-		color = 0xFFA500 // Orange
+		color = 0xFFA500 // 橙色
 	}
 
-	// Safely get values from the Data map
+	// 从 Data 映射中安全地获取值
 	safeGet := func(key string) interface{} {
 		if alert.Data == nil {
 			return nil
@@ -79,7 +79,7 @@ func (d *DiscordAlerter) SendAlert(alert Alert) error {
 						newFormatted,
 						changePercent)
 
-					// Add detailed token information as a field
+					// 作为字段添加代币的详细信息
 					fields = append(fields, field{
 						Name: "Token",
 						Value: fmt.Sprintf("%s\n`%s`",
@@ -99,7 +99,7 @@ func (d *DiscordAlerter) SendAlert(alert Alert) error {
 				description = fmt.Sprintf("```ini\n[Initial Balance]\n%s```",
 					formatted)
 
-				// Add detailed token information as a field
+				// 作为字段添加代币的详细信息
 				fields = append(fields, field{
 					Name: "Token",
 					Value: fmt.Sprintf("%s\n`%s`",
@@ -111,19 +111,19 @@ func (d *DiscordAlerter) SendAlert(alert Alert) error {
 		}
 	}
 
-	// If we failed to generate a description, use a fallback
+	// 若生成描述失败，则使用备用内容
 	if description == "" {
 		description = fmt.Sprintf("```%s```", alert.Message)
 	}
 
-	// Add wallet address as a field
+	// 将钱包地址作为一个字段
 	fields = append(fields, field{
 		Name:   "Wallet",
 		Value:  fmt.Sprintf("`%s`", alert.WalletAddress),
 		Inline: false,
 	})
 
-	// Add timestamp
+	// 添加时间戳
 	fields = append(fields, field{
 		Name:   "Time",
 		Value:  alert.Timestamp.Format("2006-01-02 15:04:05 MST"),

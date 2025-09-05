@@ -23,7 +23,7 @@ func New(dataDir string) *Storage {
 }
 
 func (s *Storage) SaveWalletData(data map[string]*monitor.WalletData) error {
-	// Ensure directory exists before saving
+	// 保存前确保目录存在
 	if err := os.MkdirAll(s.dataDir, 0755); err != nil {
 		return fmt.Errorf("failed to create data directory: %w", err)
 	}
@@ -39,12 +39,12 @@ func (s *Storage) SaveWalletData(data map[string]*monitor.WalletData) error {
 func (s *Storage) LoadWalletData() (map[string]*monitor.WalletData, error) {
 	path := filepath.Join(s.dataDir, "wallet_data.json")
 
-	// Create storage directory if it doesn't exist
+	// 如果存储目录不存在则创建
 	if err := os.MkdirAll(s.dataDir, 0755); err != nil {
 		return nil, fmt.Errorf("failed to create data directory: %w", err)
 	}
 
-	// If file doesn't exist, create empty data
+	// 如果文件不存在，则创建空数据
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		emptyData := make(map[string]*monitor.WalletData)
 		if err := s.SaveWalletData(emptyData); err != nil {

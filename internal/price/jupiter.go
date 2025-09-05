@@ -11,7 +11,7 @@ import (
 
 const (
 	jupiterPriceV2URL = "https://api.jup.ag/price/v2?ids=%s"
-	maxTokensPerBatch = 100 // Jupiter API limit
+	maxTokensPerBatch = 100 // Jupiter API 限制
 )
 
 type JupiterPrice struct {
@@ -44,7 +44,7 @@ func NewJupiterPrice() *JupiterPrice {
 }
 
 func (j *JupiterPrice) UpdatePrices(mints []string) error {
-	// Split mints into batches of 100 (Jupiter's limit)
+	// 将铸币地址按每批 100 个拆分（Jupiter 限制）
 	for i := 0; i < len(mints); i += maxTokensPerBatch {
 		end := i + maxTokensPerBatch
 		if end > len(mints) {
@@ -56,7 +56,7 @@ func (j *JupiterPrice) UpdatePrices(mints []string) error {
 			return fmt.Errorf("failed to update batch %d-%d: %w", i, end, err)
 		}
 
-		// Small delay between batches to respect rate limits
+		// 批次之间稍作延迟以遵守速率限制
 		if end < len(mints) {
 			time.Sleep(100 * time.Millisecond)
 		}

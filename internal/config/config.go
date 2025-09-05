@@ -18,15 +18,15 @@ type Config struct {
 }
 
 type AlertConfig struct {
-	MinimumBalance    uint64   `json:"minimum_balance"`    // Minimum balance to trigger alerts
-	SignificantChange float64  `json:"significant_change"` // e.g., 0.20 for 20% change
-	IgnoreTokens      []string `json:"ignore_tokens"`      // Tokens to ignore
+	MinimumBalance    uint64   `json:"minimum_balance"`    // 触发告警的最小余额
+	SignificantChange float64  `json:"significant_change"` // 例如 0.20 表示 20% 变化
+	IgnoreTokens      []string `json:"ignore_tokens"`      // 需要忽略的代币
 }
 
 type ScanConfig struct {
-	IncludeTokens []string `json:"include_tokens"` // Specific tokens to include (if empty, include all)
-	ExcludeTokens []string `json:"exclude_tokens"` // Specific tokens to exclude
-	ScanMode      string   `json:"scan_mode"`      // "all", "whitelist", or "blacklist"
+	IncludeTokens []string `json:"include_tokens"` // 指定需要包含的代币（为空则包含全部）
+	ExcludeTokens []string `json:"exclude_tokens"` // 指定需要排除的代币
+	ScanMode      string   `json:"scan_mode"`      // "all"、"whitelist" 或 "blacklist"
 }
 
 type DiscordConfig struct {
@@ -35,7 +35,7 @@ type DiscordConfig struct {
 	ChannelID  string `json:"channel_id"`
 }
 
-// Public RPC endpoints that have strict rate limits
+// 具有严格速率限制的公共 RPC 端点
 var publicRPCEndpoints = []string{
 	"https://api.mainnet-beta.solana.com",
 	"https://api.devnet.solana.com",
@@ -43,7 +43,7 @@ var publicRPCEndpoints = []string{
 	"https://solana-api.projectserum.com",
 }
 
-// Recommended RPC providers with their benefits
+// 推荐的 RPC 提供商及其优势
 var recommendedRPCProviders = map[string]string{
 	"Helius":    "100k requests/day free - https://helius.dev",
 	"QuickNode": "30M requests/month free - https://quicknode.com",
@@ -66,7 +66,7 @@ func (c *Config) Validate() error {
 			"   Example: \"CvQk2xkXtiMj2JqqVx1YZkeSqQ7jyQkNqqjeNE1jPTfc\"")
 	}
 
-	// Validate wallet addresses format
+	// 校验钱包地址格式
 	for i, wallet := range c.Wallets {
 		if len(wallet) < 32 || len(wallet) > 44 {
 			return fmt.Errorf("invalid wallet address format at index %d: %s\n\n"+
@@ -75,13 +75,13 @@ func (c *Config) Validate() error {
 		}
 	}
 
-	// Check if using public RPC endpoint
+	// 检查是否使用公共 RPC 端点
 	c.validateRPCEndpoint()
 
 	return nil
 }
 
-// validateRPCEndpoint checks if user is using a public RPC and warns them
+// validateRPCEndpoint 检查用户是否使用公共 RPC 并给出警告
 func (c *Config) validateRPCEndpoint() {
 	isPublicRPC := false
 	for _, publicURL := range publicRPCEndpoints {
@@ -104,7 +104,7 @@ func (c *Config) validateRPCEndpoint() {
 	}
 }
 
-// LoadConfig loads configuration from a JSON file
+// LoadConfig 从 JSON 文件加载配置
 func LoadConfig(path string) (*Config, error) {
 	file, err := os.ReadFile(path)
 	if err != nil {

@@ -1,32 +1,32 @@
-# Build stage
+# 构建阶段
 FROM golang:1.23.2-alpine AS builder
 
 WORKDIR /app
 
-# Copy go mod and sum files
+# 复制 go mod 和 go sum 文件
 COPY go.mod go.sum ./
 
-# Download dependencies
+# 下载依赖
 RUN go mod download
 
-# Copy source code
+# 复制源代码
 COPY . .
 
-# Build the application
+# 构建应用程序
 RUN CGO_ENABLED=0 GOOS=linux go build -o /insider-monitor ./cmd/monitor
 
-# Final stage
+# 最终阶段
 FROM alpine:latest
 
 WORKDIR /app
 
-# Copy the binary from builder
+# 从构建阶段复制二进制文件
 COPY --from=builder /insider-monitor .
-# Copy example config
+# 复制示例配置
 COPY config.example.json .
 
-# Create volume for data persistence
+# 创建卷以持久化数据
 VOLUME ["/app/data"]
 
-# Run the binary
-ENTRYPOINT ["./insider-monitor"] 
+# 运行二进制文件
+ENTRYPOINT ["./insider-monitor"]
